@@ -1,0 +1,72 @@
+# DP: Add multiarch directories to linker search path.
+
+Index: binutils-2.21.0.20110322/ld/genscripts.sh
+===================================================================
+--- binutils-2.21.0.20110322.orig/ld/genscripts.sh	2011-03-27 18:45:12.283057003 +0000
++++ binutils-2.21.0.20110322/ld/genscripts.sh	2011-03-27 18:51:20.623057182 +0000
+@@ -240,6 +240,65 @@
+ fi
+ 
+ LIB_SEARCH_DIRS=`echo ${LIB_PATH} | sed -e 's/:/ /g' -e 's/\([^ ][^ ]*\)/SEARCH_DIR(\\"\1\\");/g'`
++if [ -n "$DEB_HOST_MULTIARCH" ]; then
++    temp_dirs=' '
++    for dir in `echo ${LIB_PATH} | sed -e 's/:/ /g'`; do
++	case "$dir" in
++	    ${tool_lib}*|*/${target_alias}/*)
++	        ;;
++	    */lib)
++		if [ -n "$DEB_HOST_MULTIARCH32" ]; then
++		    case $EMULATION_NAME in
++			elf_i386|elf32*)
++			    temp_dirs="${temp_dirs}${dir}/$DEB_HOST_MULTIARCH32 ";;
++			*)
++			    temp_dirs="${temp_dirs}${dir}/$DEB_HOST_MULTIARCH "
++		    esac
++		elif [ -n "$DEB_HOST_MULTIARCH64" ]; then
++		    case $EMULATION_NAME in
++			elf*_64|elf64*)
++			    temp_dirs="${temp_dirs}${dir}/$DEB_HOST_MULTIARCH64 ";;
++			*)
++			    temp_dirs="${temp_dirs}${dir}/$DEB_HOST_MULTIARCH "
++		    esac
++		else
++		    temp_dirs="${temp_dirs}${dir}/$DEB_HOST_MULTIARCH "
++		fi
++		;;
++	    */lib32)
++	        if [ -n "$DEB_HOST_MULTIARCH32" ]; then
++		    dir2=$(echo $dir | sed "s,32$,,")
++		    temp_dirs="${temp_dirs}${dir2}/$DEB_HOST_MULTIARCH32 "
++		fi
++		;;
++	    */lib64)
++	        case "${target}" in
++		    powerpc64-*-*|s390x-*-*|sparc64-*-*|x86_64-*-linux*)
++			#dir=$(echo $dir | sed "s,64$,,")
++			dir2=$(echo $dir | sed "s,64$,,")
++			temp_dirs="${temp_dirs}${dir2}/$DEB_HOST_MULTIARCH "
++			;;
++		    *)
++			if [ -n "$DEB_HOST_MULTIARCH64" ]; then
++			    dir2=$(echo $dir | sed "s,64$,,")
++			    temp_dirs="${temp_dirs}${dir2}/$DEB_HOST_MULTIARCH64 "
++			fi
++			;;
++		esac
++	        ;;
++	    *)
++		;;
++	esac
++	temp_dirs="${temp_dirs}${dir} "
++    done
++    LIB_SEARCH_DIRS=
++    for dir in $temp_dirs; do
++	if echo "$LIB_SEARCH_DIRS" | fgrep -q "\"$dir\""; then
++	    continue
++	fi
++	LIB_SEARCH_DIRS="${LIB_SEARCH_DIRS}SEARCH_DIR(\"$dir\"); "
++    done
++fi
+ 
+ # We need it for testsuite.
+ set $EMULATION_LIBPATH

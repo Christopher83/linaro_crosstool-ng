@@ -1,0 +1,34 @@
+diff --git a/libgloss/aarch64/ftruncate.c b/libgloss/aarch64/ftruncate.c
+index da46fc5..41a64d2 100644
+--- a/libgloss/aarch64/ftruncate.c
++++ b/libgloss/aarch64/ftruncate.c
+@@ -23,10 +23,12 @@
+  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+ 
++#include <errno.h>
+ #include <sys/types.h>
+ 
+ int
+ ftruncate (int file, off_t length)
+ {
++  errno = ENOSYS;
+   return -1;
+ }
+diff --git a/libgloss/aarch64/truncate.c b/libgloss/aarch64/truncate.c
+index d53394a..92c0fca 100644
+--- a/libgloss/aarch64/truncate.c
++++ b/libgloss/aarch64/truncate.c
+@@ -23,10 +23,12 @@
+  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
+ 
++#include <errno.h>
+ #include <sys/types.h>
+ 
+ int
+ truncate (const char *path, off_t length)
+ {
++  errno = ENOSYS;
+   return -1;
+ }

@@ -1,0 +1,91 @@
+=== modified file 'ChangeLog.linaro'
+=== modified file 'gcc/ada/gcc-interface/Makefile.in'
+--- a/gcc/ada/gcc-interface/Makefile.in	2012-02-24 16:17:01 +0000
++++ b/gcc/ada/gcc-interface/Makefile.in	2012-05-14 03:26:00 +0000
+@@ -1869,7 +1869,7 @@
+   LIBRARY_VERSION := $(LIB_VERSION)
+ endif
+ 
+-ifeq ($(strip $(filter-out arm% linux-gnueabi,$(arch) $(osys)-$(word 4,$(targ)))),)
++ifeq ($(strip $(filter-out arm% linux-gnueabi%,$(arch) $(osys)-$(word 4,$(targ)))),)
+   LIBGNAT_TARGET_PAIRS = \
+   a-intnam.ads<a-intnam-linux.ads \
+   s-inmaop.adb<s-inmaop-posix.adb \
+
+=== modified file 'gcc/config.gcc'
+--- a/gcc/config.gcc	2012-04-02 13:36:04 +0000
++++ b/gcc/config.gcc	2012-05-14 03:26:00 +0000
+@@ -842,7 +842,7 @@
+ 	esac
+ 	tmake_file="${tmake_file} arm/t-arm"
+ 	case ${target} in
+-	arm*-*-linux-*eabi)
++	arm*-*-linux-*eabi*)
+ 	    tm_file="$tm_file arm/bpabi.h arm/linux-eabi.h"
+ 	    tmake_file="$tmake_file arm/t-arm-elf arm/t-bpabi arm/t-linux-eabi arm/t-mlibs"
+ 	    # Define multilib configuration for arm-linux-androideabi.
+@@ -851,6 +851,11 @@
+ 		tmake_file="$tmake_file arm/t-linux-androideabi"
+ 		;;
+ 	    esac
++	    case ${target} in
++	    arm*-*-*eabihf)
++		with_float=${with_float:-hard}
++		;;
++	    esac
+   	    # The BPABI long long divmod functions return a 128-bit value in
+ 	    # registers r0-r3.  Correctly modeling that requires the use of
+ 	    # TImode.
+
+=== modified file 'libgcc/config.host'
+--- a/libgcc/config.host	2012-02-20 21:19:55 +0000
++++ b/libgcc/config.host	2012-05-14 03:26:01 +0000
+@@ -327,7 +327,7 @@
+ arm*-*-linux*)			# ARM GNU/Linux with ELF
+ 	tmake_file="${tmake_file} arm/t-arm t-fixedpoint-gnu-prefix"
+ 	case ${host} in
+-	arm*-*-linux-*eabi)
++	arm*-*-linux-*eabi*)
+ 	  tmake_file="${tmake_file} arm/t-elf arm/t-bpabi arm/t-linux-eabi t-slibgcc-libgcc"
+ 	  tm_file="$tm_file arm/bpabi-lib.h"
+ 	  unwind_header=config/arm/unwind-arm.h
+
+=== modified file 'libjava/configure'
+--- a/libjava/configure	2012-02-24 15:21:12 +0000
++++ b/libjava/configure	2012-05-14 03:26:01 +0000
+@@ -20542,7 +20542,7 @@
+     # on Darwin -single_module speeds up loading of the dynamic libraries.
+     extra_ldflags_libjava=-Wl,-single_module
+     ;;
+-arm*linux*eabi)
++arm*linux*eabi*)
+     # Some of the ARM unwinder code is actually in libstdc++.  We
+     # could in principle replicate it in libgcj, but it's better to
+     # have a dependency on libstdc++.
+
+=== modified file 'libjava/configure.ac'
+--- a/libjava/configure.ac	2012-02-24 15:21:12 +0000
++++ b/libjava/configure.ac	2012-05-14 03:26:01 +0000
+@@ -931,7 +931,7 @@
+     # on Darwin -single_module speeds up loading of the dynamic libraries.
+     extra_ldflags_libjava=-Wl,-single_module
+     ;;
+-arm*linux*eabi)
++arm*linux*eabi*)
+     # Some of the ARM unwinder code is actually in libstdc++.  We
+     # could in principle replicate it in libgcj, but it's better to
+     # have a dependency on libstdc++.
+
+=== modified file 'libstdc++-v3/configure.host'
+--- a/libstdc++-v3/configure.host	2012-02-10 18:10:12 +0000
++++ b/libstdc++-v3/configure.host	2012-05-14 03:26:01 +0000
+@@ -340,7 +340,7 @@
+         fi
+     esac
+     case "${host}" in
+-      arm*-*-linux-*eabi)
++      arm*-*-linux-*eabi*)
+ 	port_specific_symbol_files="\$(srcdir)/../config/os/gnu-linux/arm-eabi-extra.ver"
+ 	;;
+     esac
+

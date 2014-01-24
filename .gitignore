@@ -1,0 +1,40 @@
+syntax: glob
+
+# Generated files
+Makefile
+*ct-ng*
+docs/*ct-ng*.1
+docs/*ct-ng*.1.gz
+paths.mk
+scripts/crosstool-NG.sh
+scripts/saveSample.sh
+scripts/showTuple.sh
+kconfig/conf
+kconfig/?conf
+kconfig/**.o
+kconfig/**.dep
+config/configure.in
+config.gen/
+.config
+.config.2
+
+# Temporaries
+.*.swp
+build.log
+.config.old
+
+# This is the place where toolchains are built
+.build/
+# .. and the legacy location
+targets/
+
+bin/
+lib/
+share/
+kconfig/lxdialog/*
+
+.bzr/
+.bzrignore
+.hgignore
+.hgtags
+.version

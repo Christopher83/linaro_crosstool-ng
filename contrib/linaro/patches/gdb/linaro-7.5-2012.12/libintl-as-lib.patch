@@ -1,0 +1,19 @@
+diff -Naru original/gdb/configure modified/gdb/configure
+--- original/gdb/configure	2012-09-15 22:12:07.248155385 -0700
++++ modified/gdb/configure	2012-09-15 22:18:32.420276307 -0700
+@@ -12530,13 +12530,13 @@
+ # points somewhere with bfd, with -I/foo/lib and -L/foo/lib.  We
+ # always want our bfd.
+ CFLAGS="-I${srcdir}/../include -I../bfd -I${srcdir}/../bfd $CFLAGS"
+-LDFLAGS="-L../bfd -L../libiberty $LDFLAGS"
++LDFLAGS="-L../bfd -L../libiberty  -L../intl $LDFLAGS"
+ intl=`echo $LIBINTL | sed 's,${top_builddir}/,,g'`
+ # -ldl is provided by bfd/Makfile.am (LIBDL) <PLUGINS>.
+ if test "$plugins" = "yes"; then
+   LIBS="-ldl $LIBS"
+ fi
+-LIBS="-lbfd -liberty $intl $LIBS"
++LIBS="-lbfd -liberty -lintl $intl $LIBS"
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ELF support in BFD" >&5
+ $as_echo_n "checking for ELF support in BFD... " >&6; }
+ if test "${gdb_cv_var_elf+set}" = set; then :

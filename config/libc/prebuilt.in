@@ -1,0 +1,8 @@
+# Prebuilt libc options
+
+## depends on PREBUILT_SYSROOT
+##
+## select LIBC_SUPPORT_NPTL
+##
+## help Use the EGLIBC/GLIBC from the prebuilt sysroot.
+##

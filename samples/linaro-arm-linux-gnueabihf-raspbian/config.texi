@@ -1,0 +1,9 @@
+@set TARGET arm-linux-gnueabihf-raspbian
+@set TRIPLET arm-linux-gnueabihf
+@set DEBUG_ROOT debug_root
+@set ARCH ARMv6
+@set CPU ARM1176jz-s
+@set ABI 'hard float'
+@set MODE ARM
+@set FPU VFP
+@set LSB lsb

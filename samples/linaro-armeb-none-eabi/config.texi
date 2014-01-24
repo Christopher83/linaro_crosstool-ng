@@ -1,0 +1,2 @@
+@set TARGET armeb-none-eabi
+@set TRIPLET armeb-none-eabi

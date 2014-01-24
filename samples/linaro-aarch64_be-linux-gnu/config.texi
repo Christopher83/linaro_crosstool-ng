@@ -1,0 +1,5 @@
+@set TARGET aarch64-linux-gnu 
+@set TRIPLET aarch64-linux-gnu 
+@set HAS_DEBUG_ROOT yes
+@set ARCH ARMv8-A
+@set ABI 'hard float'

@@ -1,0 +1,7 @@
+@set TARGET arm-linux-gnueabi-armv4t
+@set TRIPLET arm-linux-gnueabi
+@set HAS_DEBUG_ROOT yes
+@set ARCH ARMv4T
+@set ABI 'soft float'
+@set MODE ARM
+@set LSB lsb

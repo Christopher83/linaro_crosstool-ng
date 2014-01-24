@@ -1,0 +1,45 @@
+diff -Naru a/gcc/config/arm/t-mlibs b/gcc/config/arm/t-mlibs
+--- a/gcc/config/arm/t-mlibs	1970-01-01 08:00:00.000000000 +0800
++++ b/gcc/config/arm/t-mlibs	2012-05-10 13:45:23.642306042 +0800
+@@ -0,0 +1,21 @@
++# A set of predefined MULTILIB for different ARM targets.
++# Through the configure option --with-multilib-list, user can customize the
++# final MULTILIB implementation.
++
++comma := ,
++space :=
++space +=
++
++MULTILIB_OPTIONS   = marm
++MULTILIB_DIRNAMES  = arm
++MULTILIB_OPTIONS  += march=armv4t
++MULTILIB_DIRNAMES += armv4t
++MULTILIB_OPTIONS  += mfloat-abi=soft
++MULTILIB_DIRNAMES += soft
++
++MULTILIB_EXCEPTIONS =
++
++MULTILIB_REQUIRED = marm/march=armv4t/mfloat-abi=soft
++
++MULTILIB_OSDIRNAMES = marm/march.armv4t/mfloat-abi.soft=!arm-linux-gnueabi
++
+--- a/gcc/config.gcc	2013-01-19 14:17:28.846109285 -0800
++++ b/gcc/config.gcc	2013-01-19 14:46:29.090193698 -0800
+@@ -885,7 +885,7 @@
+ 	case ${target} in
+ 	arm*-*-linux-*eabi*)
+ 	    tm_file="$tm_file arm/bpabi.h arm/linux-eabi.h"
+-	    tmake_file="$tmake_file arm/t-arm-elf arm/t-bpabi arm/t-linux-eabi"
++	    tmake_file="$tmake_file arm/t-arm-elf arm/t-bpabi arm/t-linux-eabi arm/t-mlibs"
+ 	    # Define multilib configuration for arm-linux-androideabi.
+ 	    case ${target} in
+ 	    *-androideabi)
+@@ -937,7 +937,7 @@
+ 	case ${target} in
+ 	arm*-*-eabi*)
+ 	  tm_file="$tm_file newlib-stdint.h"
+-	  tmake_file="${tmake_file} arm/t-bpabi"
++	  tmake_file="${tmake_file} arm/t-bpabi arm/t-mlibs"
+ 	  use_gcc_stdint=wrap
+ 	  ;;
+ 	arm*-*-rtemseabi*)

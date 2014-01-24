@@ -1,0 +1,66 @@
+# DP: Document -print-multiarch option
+
+--- a/gcc/doc/fragments.texi
++++ b/gcc/doc/fragments.texi
+@@ -129,6 +129,33 @@
+ of options to be used for all builds.  If you set this, you should
+ probably set @code{CRTSTUFF_T_CFLAGS} to a dash followed by it.
+ 
++@findex MULTILIB_OSDIRNAMES
++@item MULTILIB_OSDIRNAMES
++If @code{MULTILIB_OPTIONS} is used, this variable specifies the list
++of OS subdirectory names.  The format is either the same as of
++@code{MULTILIB_DIRNAMES}, or a set of mappings.  When it is the same
++as @code{MULTILIB_DIRNAMES}, it describes the multilib directories
++using OS conventions, rather than GCC conventions.  When it is a set
++of mappings of the form @var{gccdir}=@var{osdir}, the left side gives
++the GCC convention and the right gives the equivalent OS defined
++location.  If the @var{osdir} part begins with a @samp{!}, the os
++directory names are used exclusively.  Use the mapping when there is
++no one-to-one equivalence between GCC levels and the OS.
++
++For multilib enabled configurations (see @code{MULTIARCH_DIRNAME})
++below), the multilib name is appended to each directory name, separated
++by a colon (e.g. @samp{../lib:x86_64-linux-gnu}).
++
++@findex MULTIARCH_DIRNAME
++@item MULTIARCH_DIRNAME
++If @code{MULTIARCH_DIRNAME} is used, this variable specifies the
++multiarch name for this configuration.  For multiarch enabled
++configurations it is used to search libraries and crt files in
++@file{/lib/@var{multiarch}} and @file{/usr/lib/@var{multiarch}}, and
++system header files in @file{/usr/include/@var{multiarch}}.
++@code{MULTIARCH_DIRNAME} is not used for multilib enabled
++configurations, but encoded in @code{MULTILIB_OSDIRNAMES} instead.
++
+ @findex SPECS
+ @item SPECS
+ Unfortunately, setting @code{MULTILIB_EXTRA_OPTS} is not enough, since
+--- a/gcc/doc/invoke.texi
++++ b/gcc/doc/invoke.texi
+@@ -6011,6 +6011,11 @@
+ @file{../lib32}, or if OS libraries are present in @file{lib/@var{subdir}}
+ subdirectories it prints e.g.@: @file{amd64}, @file{sparcv9} or @file{ev6}.
+ 
++@item -print-multiarch
++@opindex print-multiarch
++Print the path to OS libraries for the selected multiarch,
++relative to some @file{lib} subdirectory.
++
+ @item -print-prog-name=@var{program}
+ @opindex print-prog-name
+ Like @option{-print-file-name}, but searches for a program such as @samp{cpp}.
+--- a/gcc/doc/install.texi
++++ b/gcc/doc/install.texi
+@@ -1036,6 +1036,11 @@
+ conventions, etc.@: should not be built.  The default is to build a
+ predefined set of them.
+ 
++@item --enable-multiarch
++Specify wether to enable or disable multiarch support.  The default is
++to detect for glibc start files in a multiarch location, and enable it
++if the files are found.
++
+ Some targets provide finer-grained control over which multilibs are built
+ (e.g., @option{--disable-softfloat}):
+ @table @code

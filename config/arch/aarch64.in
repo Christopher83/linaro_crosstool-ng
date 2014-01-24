@@ -1,0 +1,12 @@
+# ARM AArch64 specific configuration file
+
+## select ARCH_SUPPORTS_64
+## select ARCH_DEFAULT_64
+## select ARCH_DEFAULT_HAS_MMU
+## select ARCH_SUPPORTS_BOTH_ENDIAN
+## select ARCH_DEFAULT_LE
+## select ARCH_SUPPORT_ARCH
+## select ARCH_SUPPORT_CPU
+##
+## help The ARM AArch64 architecture, as defined by:
+## help     http://www.arm.com/

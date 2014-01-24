@@ -1,0 +1,186 @@
+Various changes to LSB to let you build a toolchain against it.
+
+ * Remove trailing commas to make g++-4.1 happy
+ * Add a fake stdio_ext.h to prevent configure picking the host one
+ * Add a fake prctl.h to prevent configure picking the host one
+ * Comment-out bzero to prevent a uninvestigated x0 error
+ * Define TIOCSWINSZ for readline
+ * Define FIONBIO for GDB
+ * Define WCHAR_* in stdint.h to stop GDB using gnulib
+ * Trap gnu-versions.h to stop GDB using the system readline
+ * Pull in the posix_madvise constants that should be there
+ * Add PRIi64 for aarch64 binutils
+ * Make eglibc sunrpc happy by defining quad_t etc
+ * Use __builtin_offsetof for offsetof
+
+diff --exclude='*~' -Nur a/usr/include/lsb3/ctype.hb/usr/include/lsb3/ctype.h
+--- a/usr/include/lsb3/ctype.h	2009-11-18 09:33:44.000000000 +1300
++++ b/usr/include/lsb3/ctype.h	2011-11-23 14:33:13.283982111 +1300
+@@ -30,7 +30,7 @@
+ 	_ISblank = 1,
+ 	_IScntrl = 2,
+ 	_ISpunct = 4,
+-	_ISalnum = 8,
++	_ISalnum = 8
+ #endif
+ #if defined __ia64__
+ /* IA64 */
+@@ -45,7 +45,7 @@
+ 	_ISblank = 1,
+ 	_IScntrl = 2,
+ 	_ISpunct = 4,
+-	_ISalnum = 8,
++	_ISalnum = 8
+ #endif
+ #if defined __powerpc__ && !defined __powerpc64__
+ /* PPC32 */
+@@ -105,7 +105,7 @@
+ 	_ISblank = 1,
+ 	_IScntrl = 2,
+ 	_ISpunct = 4,
+-	_ISalnum = 8,
++	_ISalnum = 8
+ #endif
+ #if defined __s390x__
+ /* S390X */
+diff --exclude='*~' -Nur a/usr/include/lsb3/stdio_ext.h b/usr/include/lsb3/stdio_ext.h
+--- a/usr/include/lsb3/stdio_ext.h	1970-01-01 12:00:00.000000000 +1200
++++ b/usr/include/lsb3/stdio_ext.h	2011-11-23 12:04:02.025233369 +1300
+@@ -0,0 +1 @@
++#error Trapped!
+diff --exclude='*~' -Nur a/usr/include/lsb3/gnu-versions.h b/usr/include/lsb3/gnu-versions.h
+--- a/usr/include/lsb3/gnu-versions.h	1970-01-01 12:00:00.000000000 +1200
++++ b/usr/include/lsb3/gnu-versions.h	2011-11-23 12:04:02.025233369 +1300
+@@ -0,0 +1 @@
++#error Trapped!
+diff --exclude='*~' -Nur a/usr/include/lsb3/strings.h b/usr/include/lsb3/strings.h
+--- a/usr/include/lsb3/strings.h	2009-11-18 09:33:44.000000000 +1300
++++ b/usr/include/lsb3/strings.h	2011-11-23 11:32:46.325226037 +1300
+@@ -14,7 +14,7 @@
+ 
+     extern void bcopy(const void *, void *, size_t);
+     extern int bcmp(const void *, const void *, size_t);
+-    extern void bzero(void *, size_t);
++/*    extern void bzero(void *, size_t); */
+     extern int ffs(int);
+     extern char *index(const char *, int);
+     extern char *rindex(const char *, int);
+diff --exclude='*~' -Nur a/usr/include/lsb3/sys/ioctl.h b/usr/include/lsb3/sys/ioctl.h
+--- a/usr/include/lsb3/sys/ioctl.h	2009-11-18 09:33:44.000000000 +1300
++++ b/usr/include/lsb3/sys/ioctl.h	2011-11-23 14:19:51.004260176 +1300
+@@ -16,6 +16,8 @@
+ #endif
+ #if defined __i386__
+ #define TIOCGWINSZ	0x5413
++#define TIOCSWINSZ	0x5414
++#define FIONBIO	0x5421
+ #endif
+ #if defined __ia64__
+ #define TIOCGWINSZ	0x5413
+@@ -25,6 +26,8 @@
+ #endif
+ #if defined __x86_64__
+ #define TIOCGWINSZ	0x5413
++#define TIOCSWINSZ	0x5414
++#define FIONBIO	0x5421
+ #endif
+ #if defined __s390x__
+ #define TIOCGWINSZ	0x5413
+diff --exclude='*~' -Nur a/usr/include/lsb3/sys/prctl.h b/usr/include/lsb3/sys/prctl.h
+--- a/usr/include/lsb3/sys/prctl.h	1970-01-01 12:00:00.000000000 +1200
++++ b/usr/include/lsb3/sys/prctl.h	2011-11-23 13:53:34.503964260 +1300
+@@ -0,0 +1 @@
++#error Trapped!
+diff --exclude='*~' -Nur a/usr/include/lsb3/gpm.h b/usr/include/lsb3/gpm.h
+--- a/usr/include/lsb3/gpm.h	1970-01-01 12:00:00.000000000 +1200
++++ b/usr/include/lsb3/gpm.h	2011-11-23 12:04:02.025233369 +1300
+@@ -0,0 +1 @@
++#error Trapped!
+diff -ur orig/usr/include/lsb3/stdint.h lsb/usr/include/lsb3/stdint.h
+--- a/usr/include/lsb3/stdint.h	2009-11-18 09:33:44.000000000 +1300
++++ b/usr/include/lsb3/stdint.h	2012-01-19 15:42:09.003465299 +1300
+@@ -6,7 +6,9 @@
+ extern "C" {
+ #endif
+ 
+-
++/* Pulled in from wchar.h.  C99 says they should be here */
++#define WCHAR_MAX	0x7FFFFFFF
++#define WCHAR_MIN	0x80000000
+ 
+ #define INT16_C(c)	c
+ #define INT32_C(c)	c
+diff -ur orig/usr/include/lsb3/sys/mman.h lsb/usr/include/lsb3/sys/mman.h
+--- a/usr/include/lsb3/sys/mman.h	2009-11-18 09:33:44.000000000 +1300
++++ b/usr/include/lsb3/sys/mman.h	2012-06-14 14:48:13.644761444 +1200
+@@ -70,6 +70,13 @@
+ #define MAP_ANON	MAP_ANONYMOUS
+ 
+ 
++#define POSIX_MADV_NORMAL	0
++#define MREMAP_MAYMOVE	1
++#define POSIX_MADV_RANDOM	1
++#define MREMAP_FIXED	2
++#define POSIX_MADV_SEQUENTIAL	2
++#define POSIX_MADV_WILLNEED	3
++#define POSIX_MADV_DONTNEED	4
+ 
+     extern void *mremap(void *, size_t, size_t, int);
+     extern int posix_madvise(void *, size_t, int);
+diff -bur base/usr/include/lsb3/inttypes.h lsb/usr/include/lsb3/inttypes.h
+--- a/usr/include/lsb3/inttypes.h	2009-11-18 09:33:44.000000000 +1300
++++ b/usr/include/lsb3/inttypes.h	2012-08-15 18:57:01.724604097 +1200
+@@ -23,10 +23,9 @@
+ #define __PDP_ENDIAN	3412
+ #define PDP_ENDIAN	__PDP_ENDIAN
+ 
+-
+-
+-
+-
++  /* Used by aarch64 in binutils.  long long is eight bytes on i686 and x86_64 */
++# define PRIi64		"lli"
++# define PRIx64		"llx"
+ 
+     extern intmax_t strtoimax(const char *, char **, int);
+     extern uintmax_t strtoumax(const char *, char **, int);
+diff -ur lsb/usr/include/lsb3/sys/types.h new/usr/include/lsb3/sys/types.h
+--- lsb/usr/include/lsb3/sys/types.h	2009-11-18 09:33:44.000000000 +1300
++++ new/usr/include/lsb3/sys/types.h	2012-09-17 11:40:13.357996788 +1200
+@@ -128,6 +128,11 @@
+ 
+     typedef unsigned long int u_long;
+ 
++    typedef long long quad_t;
++
++    typedef unsigned long long u_quad_t;
++
++#define __u_char_defined
+ 
+ /* Stuff really in linux/types.h*/
+ 
+@@ -143,7 +148,10 @@
+     typedef unsigned long int nlink_t;
+ 
+     typedef char *caddr_t;
++#define __caddr_t_defined
+ 
++    typedef int daddr_t;
++#define __daddr_t_defined
+ 
+ #if defined __ia64__
+ #define __FDSET_LONGS	16
+diff -Naru lsb/usr/include/lsb3/stddef.h new/usr/include/lsb3/stddef.h
+--- lsb/usr/include/lsb3/stddef.h	2009-11-17 11:28:39.000000000 -0800
++++ new/usr/include/lsb3/stddef.h	2012-12-12 23:00:07.921403570 -0800
+@@ -7,8 +7,7 @@
+ #endif
+ 
+ 
+-
+-#define offsetof(TYPE,MEMBER)	((size_t)&((TYPE*)0)->MEMBER)
++#define offsetof(TYPE,MEMBER)  (__builtin_offsetof(TYPE,MEMBER))
+ #define NULL	(0L)
+ 
+ 
+

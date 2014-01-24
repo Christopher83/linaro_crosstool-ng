@@ -1,0 +1,127 @@
+# Top level Makefile that builds a few packages to test the binary
+# build.
+#
+# Takes various shortcuts.
+#
+
+TOP = $(PWD)
+
+TARGET = arm-linux-gnueabihf
+
+stamp = stamp/
+tstamp = $(stamp)$(T)-
+
+build = build
+tbuild = build/$(T)
+install = $(TOP)/install
+
+# Packages in dependancy order.  Don't run this script in parallel.
+PACKAGES = \
+	ncurses readline pcre grep libtool libunistring libffi gmp \
+	dash gzip sed tar aspell bison \
+	gawk make units
+
+# guile 2.0.3 gets stuck
+# guile 1.8.8 can't find libdl (needs fixing)
+# Python doesn't cross compile cleanly
+# gc uses swp
+WOULD_BE_NICE = guile Python gc
+
+# This Makefile runs sequentially.  Build the packages in parallel.
+JOBFLAGS ?= -j4
+
+QEMU_IMG = beagle.img
+QEMU_PORT = 7024
+
+GNU_MIRROR = http://ftp.gnu.org/gnu/
+URLS = \
+	ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/pcre-8.21.tar.gz \
+	$(GNU_MIRROR)grep/grep-2.10.tar.xz \
+	http://gondor.apana.org.au/~herbert/dash/files/dash-0.5.7.tar.gz \
+	$(GNU_MIRROR)gzip/gzip-1.4.tar.gz \
+	$(GNU_MIRROR)sed/sed-4.2.1.tar.gz \
+	$(GNU_MIRROR)tar/tar-1.26.tar.gz \
+	$(GNU_MIRROR)bison/bison-2.5.tar.gz \
+	$(GNU_MIRROR)aspell/aspell-0.60.6.1.tar.gz \
+	$(GNU_MIRROR)gawk/gawk-4.0.0.tar.gz \
+	$(GNU_MIRROR)gmp/gmp-5.0.2.tar.gz \
+	$(GNU_MIRROR)guile/guile-1.8.8.tar.gz \
+	$(GNU_MIRROR)make/make-3.82.tar.gz \
+	$(GNU_MIRROR)units/units-1.88.tar.gz \
+	$(GNU_MIRROR)readline/readline-6.2.tar.gz \
+	http://python.org/ftp/python/2.7.2/Python-2.7.2.tgz \
+	$(GNU_MIRROR)libtool/libtool-2.4.2.tar.gz \
+	$(GNU_MIRROR)libunistring/libunistring-0.9.3.tar.gz \
+	ftp://sourceware.org/pub/libffi/libffi-3.0.10.tar.gz \
+	http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_source/gc-7.1.tar.gz \
+	http://ftp.gnu.org/pub/gnu/ncurses/ncurses-5.9.tar.gz
+
+all: $(PACKAGES:%=build-%)
+
+# Fetch the tarballs from the internet
+fetch:
+	mkdir -p tarballs
+	cd tarballs && echo $(URLS) | xargs -n 1 -P 3 wget -N
+
+build-%:
+	$(MAKE) build T=$*
+
+build: $(tstamp)build
+
+$(tstamp)build: $(tstamp)configure
+	$(MAKE) -C $(tbuild) $(JOBFLAGS)
+	$(MAKE) -C $(tbuild) install
+	touch $@
+
+$(tstamp)configure: $(tstamp)extract
+	cd $(tbuild) && \
+	CPPFLAGS="-I$(install)/include" \
+	CFLAGS="-marm -march=armv4t -mfloat-abi=soft -I$(install)/include" \
+	CXXFLAGS="-marm -march=armv4t -mfloat-abi=soft" \
+	LDFLAGS="-marm -march=armv4t -mfloat-abi=soft -L$(install)/lib" \
+	AR=$(TARGET)-ar \
+	./configure \
+	--prefix=$(install) \
+	--host=$(TARGET) \
+	--target=$(TARGET) \
+	--without-ada \
+	--enable-pc-files
+	touch $@
+
+
+$(stamp)%-postextract:
+	true
+
+$(stamp)Python-postextract:
+	cd $(tbuild) && ./configure
+	$(MAKE) -C $(tbuild) python Parser/pgen $(JOBFLAGS)
+	mv $(tbuild)/python $(tbuild)/hostpython
+	mv $(tbuild)/Parser/pgen $(tbuild)/Parser/hostpgen
+	make -C $(tbuild) distclean
+
+$(tstamp)extract: $(wildcard tarballs/$(T)*gz) $(wildcard tarballs/$(T)*xz)
+	rm -rf $(tbuild)
+	mkdir -p $(tbuild)
+	tar xzf $< -C $(tbuild) --strip-components=1 || \
+	tar xf $< -I unxz -C $(tbuild) --strip-components=1
+	$(MAKE) $(tstamp)postextract
+	cat /dev/null $(wildcard patches/$(T)*) | patch -p1 -d $(tbuild)
+	mkdir -p $(@D)
+	touch $@
+
+$(QEMU_IMG): $(QEMU_IMG:%.img=%-base.qcow)
+	qemu-img convert -O raw $< $@
+
+runqemu: $(QEMU_IMG)
+	qemu-system-arm -M beaglexm \
+		-drive if=sd,cache=writeback,file=$(QEMU_IMG) \
+		-clock unix -device usb-kbd -device usb-mouse -usb \
+		-device usb-net,netdev=mynet \
+		-netdev user,id=mynet,hostfwd=tcp::$(QEMU_PORT)-:22 -nographic
+
+push:
+	ssh -p $(QEMU_PORT) localhost "mkdir -p $(shell pwd)"
+	rsync -e "ssh -p $(QEMU_PORT)" -rtli install localhost:$(shell pwd)
+
+clean:
+	rm -rf $(stamp) $(build) $(install)

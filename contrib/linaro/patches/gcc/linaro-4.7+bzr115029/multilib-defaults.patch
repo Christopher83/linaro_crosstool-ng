@@ -1,0 +1,12 @@
+diff -Naru a/gcc/config/arm/linux-elf.h b/gcc/config/arm/linux-elf.h
+--- a/gcc/config/arm/linux-elf.h	2012-05-10 09:35:16.834673203 +0800
++++ b/gcc/config/arm/linux-elf.h	2012-05-11 16:48:48.243398951 +0800
+@@ -48,7 +48,7 @@
+ 
+ #undef  MULTILIB_DEFAULTS
+ #define MULTILIB_DEFAULTS \
+-	{ "marm", "mlittle-endian", "mfloat-abi=hard", "mno-thumb-interwork" }
++	{ "mthumb", "mlittle-endian", "mfloat-abi=hard", "mno-thumb-interwork" }
+ 
+ /* Now we define the strings used to build the spec file.  */
+ #undef  LIB_SPEC

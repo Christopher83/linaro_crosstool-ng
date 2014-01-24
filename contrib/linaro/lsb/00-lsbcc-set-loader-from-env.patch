@@ -1,0 +1,18 @@
+Only in lsb-build-cc3-3.2.0/build_env/lsbdev-cc: a.out
+Only in lsb-build-cc3-3.2.0/build_env/lsbdev-cc: hello.c
+diff -ur orig/build_env/lsbdev-cc/lsbcc.c lsb-build-cc3-3.2.0/build_env/lsbdev-cc/lsbcc.c
+--- orig/build_env/lsbdev-cc/lsbcc.c	2008-01-18 16:00:21.000000000 +1300
++++ lsb-build-cc3-3.2.0/build_env/lsbdev-cc/lsbcc.c	2012-01-13 12:14:17.104567474 +1300
+@@ -787,6 +787,12 @@
+ 		fprintf(stderr,"lsbcc debug set to 0x%x\n", lsbcc_debug );
+ 	}
+ 
++if( (ptr=getenv("LSBCC_LDSO")) != NULL ) {
++	proginterpreter=ptr;
++	if( lsbcc_debug&DEBUG_ENV_OVERRIDES )
++		fprintf(stderr,"proginterpreter name set to %s\n", proginterpreter );
++	}
++
+ if(LSBCPLUS != lsbccmode) {
+ 	if( (ptr=getenv("LSBCC")) != NULL ) {
+ 		ccname=ptr;

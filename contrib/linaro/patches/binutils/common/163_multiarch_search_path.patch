@@ -1,0 +1,79 @@
+# DP: multiarch search paths
+
+--- binutils-2.21.53.20110810.orig/gold/Makefile.am
++++ binutils-2.21.53.20110810/gold/Makefile.am
+@@ -15,7 +15,7 @@
+ 	-I$(srcdir) -I$(srcdir)/../include -I$(srcdir)/../elfcpp \
+ 	-DLOCALEDIR="\"$(datadir)/locale\"" \
+ 	-DBINDIR="\"$(bindir)\"" -DTOOLBINDIR="\"$(tooldir)/bin\"" \
+-	@INCINTL@
++	@INCINTL@ @MULTIARCH_DIRNAME@
+ 
+ LIBIBERTY = ../libiberty/libiberty.a
+ 
+--- binutils-2.21.53.20110810.orig/gold/configure
++++ binutils-2.21.53.20110810/gold/configure
+@@ -594,6 +594,7 @@
+ MAINT
+ MAINTAINER_MODE_FALSE
+ MAINTAINER_MODE_TRUE
++MULTIARCH_DIRNAME
+ CXXCPP
+ HAVE_ZLIB_FALSE
+ HAVE_ZLIB_TRUE
+@@ -7133,6 +7134,14 @@
+ ac_compiler_gnu=$ac_cv_c_compiler_gnu
+ 
+ 
++if test x$target = x$host; then
++  multiarch=`$CC -print-multiarch 2>/dev/null`
++  if test -n "$multiarch"; then
++    MULTIARCH_DIRNAME='-DMULTIARCH_DIRNAME=\"'$multiarch'\"'
++  fi
++fi
++
++
+ 
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable maintainer-specific portions of Makefiles" >&5
+ $as_echo_n "checking whether to enable maintainer-specific portions of Makefiles... " >&6; }
+--- binutils-2.21.53.20110810.orig/gold/configure.ac
++++ binutils-2.21.53.20110810/gold/configure.ac
+@@ -475,6 +475,14 @@
+ 
+ AC_LANG_POP(C++)
+ 
++if test x$target = x$host; then
++  multiarch=`$CC -print-multiarch 2>/dev/null`
++  if test -n "$multiarch"; then
++    MULTIARCH_DIRNAME='-DMULTIARCH_DIRNAME=\"'$multiarch'\"'
++  fi
++fi
++AC_SUBST(MULTIARCH_DIRNAME)
++
+ AM_MAINTAINER_MODE
+ 
+ AC_OUTPUT(Makefile testsuite/Makefile po/Makefile.in:po/Make-in)
+--- binutils-2.21.53.20110810.orig/gold/options.cc
++++ binutils-2.21.53.20110810/gold/options.cc
+@@ -1145,6 +1147,10 @@
+     {
+       // Even if they don't specify it, we add -L /lib and -L /usr/lib.
+       // FIXME: We should only do this when configured in native mode.
++#ifdef MULTIARCH_DIRNAME
++      this->add_to_library_path_with_sysroot("/lib/" MULTIARCH_DIRNAME);
++      this->add_to_library_path_with_sysroot("/usr/lib/" MULTIARCH_DIRNAME);
++#endif
+       this->add_to_library_path_with_sysroot("/lib");
+       this->add_to_library_path_with_sysroot("/usr/lib");
+     }
+--- binutils-2.21.53.20110810.orig/gold/Makefile.in
++++ binutils-2.21.53.20110810/gold/Makefile.in
+@@ -364,7 +364,7 @@
+ 	-I$(srcdir) -I$(srcdir)/../include -I$(srcdir)/../elfcpp \
+ 	-DLOCALEDIR="\"$(datadir)/locale\"" \
+ 	-DBINDIR="\"$(bindir)\"" -DTOOLBINDIR="\"$(tooldir)/bin\"" \
+-	@INCINTL@
++	@INCINTL@ @MULTIARCH_DIRNAME@
+ 
+ LIBIBERTY = ../libiberty/libiberty.a
+ @PLUGINS_TRUE@LIBDL = -ldl

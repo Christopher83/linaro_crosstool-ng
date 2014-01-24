@@ -1,0 +1,15 @@
+=== modified file 'gcc/Makefile.in'
+--- a/gcc/Makefile.in	2012-04-02 13:36:04 +0000
++++ b/gcc/Makefile.in	2012-04-13 04:12:57 +0000
+@@ -229,8 +229,8 @@
+ ifneq ($(ENABLE_BUILD_WITH_CXX),yes)
+ COMPILER = $(CC)
+ COMPILER_FLAGS = $(CFLAGS)
+-LINKER = $(CC)
+-LINKER_FLAGS = $(CFLAGS)
++LINKER = $(CXX)
++LINKER_FLAGS = $(CXXFLAGS)
+ else
+ COMPILER = $(CXX)
+ COMPILER_FLAGS = $(CXXFLAGS)
+

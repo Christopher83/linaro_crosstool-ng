@@ -1,0 +1,228 @@
+diff -aru eglibc-linaro-2.17-2013.06/config.make.in eglibc-2_17/config.make.in
+--- eglibc-linaro-2.17-2013.06/config.make.in	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/config.make.in	2013-07-12 04:19:45.850773366 +0800
+@@ -11,6 +11,7 @@
+ datadir = @datadir@
+ libdir = @libdir@
+ slibdir = @libc_cv_slibdir@
++rtlddir = @libc_cv_rtlddir@
+ localedir = @libc_cv_localedir@
+ sysconfdir = @libc_cv_sysconfdir@
+ libexecdir = @libexecdir@
+diff -aru eglibc-linaro-2.17-2013.06/configure eglibc-2_17/configure
+--- eglibc-linaro-2.17-2013.06/configure	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/configure	2013-07-12 16:32:56.530758319 +0800
+@@ -594,6 +594,7 @@
+ libc_cv_localstatedir
+ libc_cv_sysconfdir
+ libc_cv_localedir
++libc_cv_rtlddir
+ libc_cv_slibdir
+ old_glibc_headers
+ use_nscd
+@@ -7622,6 +7623,7 @@
+ 
+ 
+ 
++
+ if test x$use_ldconfig = xyes; then
+   $as_echo "#define USE_LDCONFIG 1" >>confdefs.h
+ 
+diff -aru eglibc-linaro-2.17-2013.06/configure.in eglibc-2_17/configure.in
+--- eglibc-linaro-2.17-2013.06/configure.in	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/configure.in	2013-07-12 04:19:45.850773366 +0800
+@@ -2140,6 +2140,7 @@
+ AC_SUBST(old_glibc_headers)
+ 
+ AC_SUBST(libc_cv_slibdir)
++AC_SUBST(libc_cv_rtlddir)
+ AC_SUBST(libc_cv_localedir)
+ AC_SUBST(libc_cv_sysconfdir)
+ AC_SUBST(libc_cv_localstatedir)
+diff -aru eglibc-linaro-2.17-2013.06/elf/Makefile eglibc-2_17/elf/Makefile
+--- eglibc-linaro-2.17-2013.06/elf/Makefile	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/elf/Makefile	2013-07-12 04:19:45.850773366 +0800
+@@ -66,7 +66,7 @@
+ ifeq (yes,$(build-shared))
+ extra-objs	= $(all-rtld-routines:%=%.os) soinit.os sofini.os interp.os
+ generated	+= librtld.os dl-allobjs.os ld.so ldd
+-install-others	= $(inst_slibdir)/$(rtld-installed-name)
++install-others	= $(inst_rtlddir)/$(rtld-installed-name)
+ install-bin-script = ldd
+ endif
+ 
+@@ -340,7 +340,7 @@
+ 	  | $(AWK) '($$7 ~ /^UND(|EF)$$/ && $$1 != "0:" && $$4 != "REGISTER") { print; p=1 } END { exit p != 0 }'
+ 
+ # interp.c exists just to get this string into the libraries.
+-CFLAGS-interp.c = -D'RUNTIME_LINKER="$(slibdir)/$(rtld-installed-name)"' \
++CFLAGS-interp.c = -D'RUNTIME_LINKER="$(rtlddir)/$(rtld-installed-name)"' \
+ 		  -DNOT_IN_libc=1
+ $(objpfx)interp.os: $(common-objpfx)config.make
+ 
+@@ -372,18 +372,19 @@
+ 	$(make-target-directory)
+ 	$(do-install-program)
+ 
+-$(inst_slibdir)/$(rtld-installed-name): \
++$(inst_rtlddir)/$(rtld-installed-name): \
+   $(inst_slibdir)/$(rtld-version-installed-name) \
+   $(inst_slibdir)/libc-$(version).so
++	$(make-target-directory)
+ 	$(make-shlib-link)
+ 
+ # Special target called by parent to install just the dynamic linker.
+ .PHONY: ldso_install
+-ldso_install: $(inst_slibdir)/$(rtld-installed-name)
++ldso_install: $(inst_rtlddir)/$(rtld-installed-name)
+ endif
+ 
+ 
+-common-ldd-rewrite = -e 's%@RTLD@%$(slibdir)/$(rtld-installed-name)%g' \
++common-ldd-rewrite = -e 's%@RTLD@%$(rtlddir)/$(rtld-installed-name)%g' \
+ 		     -e 's%@VERSION@%$(version)%g' \
+ 		     -e 's|@PKGVERSION@|$(PKGVERSION)|g' \
+ 		     -e 's|@REPORT_BUGS_TO@|$(REPORT_BUGS_TO)|g'
+diff -aru eglibc-linaro-2.17-2013.06/Makeconfig eglibc-2_17/Makeconfig
+--- eglibc-linaro-2.17-2013.06/Makeconfig	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/Makeconfig	2013-07-12 04:21:20.300759143 +0800
+@@ -148,12 +148,18 @@
+ endif
+ inst_libdir = $(install_root)$(libdir)
+ 
+-# Where to install the shared library and dynamic linker.
++# Where to install the shared library.
+ ifndef slibdir
+ slibdir = $(exec_prefix)/lib
+ endif
+ inst_slibdir = $(install_root)$(slibdir)
+ 
++# Where to install the dynamic linker.
++ifndef rtlddir
++rtlddir = $(slibdir)
++endif
++inst_rtlddir = $(install_root)$(rtlddir)
++
+ # Prefix to put on files installed in $(libdir).  For libraries `libNAME.a',
+ # the prefix is spliced between `lib' and the name, so the linker switch
+ # `-l$(libprefix)NAME' finds the library; for other files the prefix is
+@@ -443,7 +449,7 @@
+ endif
+ ifndef config-LDFLAGS
+ ifeq (yes,$(build-shared))
+-config-LDFLAGS = -Wl,-dynamic-linker=$(slibdir)/$(rtld-installed-name)
++config-LDFLAGS = -Wl,-dynamic-linker=$(rtlddir)/$(rtld-installed-name)
+ endif
+ endif
+ ifndef link-libc
+diff -aru eglibc-linaro-2.17-2013.06/Makerules eglibc-2_17/Makerules
+--- eglibc-linaro-2.17-2013.06/Makerules	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/Makerules	2013-07-12 04:21:31.420753992 +0800
+@@ -922,7 +922,7 @@
+ symbolic-link-prog := $(common-objpfx)elf/sln
+ symbolic-link-list := $(common-objpfx)elf/symlink.list
+ define make-shlib-link
+-echo $(<F) $@ >> $(symbolic-link-list)
++echo `$(..)scripts/rellns-sh -p $< $@` $@ >> $(symbolic-link-list)
+ endef
+ else # cross-compiling
+ # We need a definition that can be used by elf/Makefile's install rules.
+@@ -932,7 +932,7 @@
+ ifndef make-shlib-link
+ define make-shlib-link
+ rm -f $@
+-$(LN_S) $(<F) $@
++$(LN_S) `$(..)scripts/rellns-sh -p $< $@` $@
+ endef
+ endif
+ 
+@@ -986,7 +986,7 @@
+ 	 cat $<; \
+ 	 echo 'GROUP ( $(slibdir)/libc.so$(libc.so-version)' \
+ 	      '$(libdir)/$(patsubst %,$(libtype.oS),$(libprefix)$(libc-name))'\
+-	      ' AS_NEEDED (' $(slibdir)/$(rtld-installed-name) ') )' \
++	      ' AS_NEEDED (' $(rtlddir)/$(rtld-installed-name) ') )' \
+ 	) > $@.new
+ 	mv -f $@.new $@
+ 
+diff -aru eglibc-linaro-2.17-2013.06/scripts/rellns-sh eglibc-2_17/scripts/rellns-sh
+--- eglibc-linaro-2.17-2013.06/scripts/rellns-sh	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/scripts/rellns-sh	2013-07-12 04:41:32.270754364 +0800
+@@ -16,8 +16,17 @@
+ # You should have received a copy of the GNU General Public License
+ # along with this program; if not, see <http://www.gnu.org/licenses/>.
+ 
++# With -p, instead of creating the link print the computed relative link
++# name.
++do_print=false
++case $1 in
++  -p)
++    do_print=true
++    shift
++    ;;
++esac
+ if test $# -ne 2; then
+-  echo "Usage: rellns SOURCE DEST" >&2
++  echo "Usage: rellns [-p] SOURCE DEST" >&2
+   exit 1
+ fi
+ 
+@@ -70,4 +79,8 @@
+   from=`echo $from | sed 's%^[^/]*/*%%'`
+ done
+ 
+-ln -s $rfrom$to $2
++if $do_print; then
++  echo "$rfrom$to"
++else
++  ln -s $rfrom$to $2
++fi
+diff -aru eglibc-linaro-2.17-2013.06/sysdeps/gnu/configure eglibc-2_17/sysdeps/gnu/configure
+--- eglibc-linaro-2.17-2013.06/sysdeps/gnu/configure	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/sysdeps/gnu/configure	2013-07-12 16:32:56.260757794 +0800
+@@ -9,12 +9,18 @@
+ case "$prefix" in
+ /usr | /usr/)
+   # 64-bit libraries on bi-arch platforms go in /lib64 instead of /lib.
+-  # Allow earlier configure scripts to handle libc_cv_slibdir, libdir,
+-  # and libc_cv_localedir.
++  # Allow earlier configure scripts to handle libc_cv_slibdir,
++  # libc_cv_rtlddir, libdir, and libc_cv_localedir.
+   test -n "$libc_cv_slibdir" || \
+   case $machine in
+-  sparc/sparc64 | x86_64* | powerpc/powerpc64 | s390/s390-64)
+-    libc_cv_slibdir=/lib64
++  sparc/sparc64 | x86_64* | powerpc/powerpc64 | s390/s390-64 | aarch64)
++    libc_cv_slibdir=/lib/aarch64-linux-gnu
++    libc_cv_rtlddir=/lib
++    case $machine in
++    s390/s390-64)
++      libc_cv_rtlddir=/lib
++      ;;
++    esac
+     if test "$libdir" = '${exec_prefix}/lib'; then
+       libdir='${exec_prefix}/lib64';
+       # Locale data can be shared between 32bit and 64bit libraries
+diff -aru eglibc-linaro-2.17-2013.06/sysdeps/gnu/configure.in eglibc-2_17/sysdeps/gnu/configure.in
+--- eglibc-linaro-2.17-2013.06/sysdeps/gnu/configure.in	2013-06-12 21:10:05.000000000 +0800
++++ eglibc-2_17/sysdeps/gnu/configure.in	2013-07-12 04:19:45.850773366 +0800
+@@ -9,12 +9,17 @@
+ case "$prefix" in
+ /usr | /usr/)
+   # 64-bit libraries on bi-arch platforms go in /lib64 instead of /lib.
+-  # Allow earlier configure scripts to handle libc_cv_slibdir, libdir,
+-  # and libc_cv_localedir.
++  # Allow earlier configure scripts to handle libc_cv_slibdir,
++  # libc_cv_rtlddir, libdir, and libc_cv_localedir.
+   test -n "$libc_cv_slibdir" || \
+   case $machine in
+   sparc/sparc64 | x86_64* | powerpc/powerpc64 | s390/s390-64)
+     libc_cv_slibdir=/lib64
++    case $machine in
++    s390/s390-64)
++      libc_cv_rtlddir=/lib
++      ;;
++    esac
+     if test "$libdir" = '${exec_prefix}/lib'; then
+       libdir='${exec_prefix}/lib64';
+       # Locale data can be shared between 32bit and 64bit libraries

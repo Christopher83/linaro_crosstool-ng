@@ -1,0 +1,111 @@
+Build host configuration
+
+Ubuntu 8.04.4 i386 server
+OpenSSH
+
+echo "deb http://ppa.launchpad.net/bzr/ppa/ubuntu hardy main" >> /etc/apt/sources.list
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 8C6C1EFD
+apt-get update
+
+apt-get install -yq jed bzr
+apt-get build-dep -yq gcc binutils gdb
+apt-get install -yq gawk automake curl cvs subversion libncurses5-dev
+
+Conflicting netfilter files:
+
+xt_connmark.h
+xt_dscp.h
+xt_mark.h
+xt_rateest.h
+xt_tcpmss.h
+
+Running on Lucid x86_64
+=======================
+See: /path/to/arm-linux-gnueabi-gcc: No such file or directory
+ - linker problem
+
+sudo apt-get install ia32-libs lsb-core
+
+New version
+-----------
+Doing the monthly update involves touching:
+ config/cc/gcc.in
+ contrib/linaro/build.mk (VERSION and SPIN)
+ contrib/linaro/patches/ (move patches along)
+ contrib/linaro/doc/README.txt
+ samples/linaro-*/crosstool
+
+ld-lsb.so
+---------
+This is annoying as on a x86_64 host with a 32 bit program like, say,
+Skype or Flash you already have the needed libraries.
+
+On Lucid it's a symlink to ld-linux.so.2 -> /lib32/ld-linux.so.2 ->
+/lib32/ld-2.11.1.so
+
+Same on Oneiric.
+
+Same on Fedora 16.
+
+Same on RHEL 5.
+
+Same on Debian 6.
+
+Same on openSUSE 12.1.
+
+Style
+=====
+Some things are the same across all Linaro configurations:
+
+# General:
+-CT_INSTALL_DIR_RO=y
+ CT_STRIP_ALL_TOOLCHAIN_EXECUTABLES=y
++# CT_OVERIDE_CONFIG_GUESS_SUB is not set
++CT_PATCH_ORDER="bundled,local"
++CT_PATCH_USE_LOCAL=y
++CT_LOCAL_PATCH_DIR="${CT_LIB_DIR}/contrib/linaro/patches"
++# CT_LOG_PROGRESS_BAR is not set
++# CT_STATIC_TOOLCHAIN is not set
++CT_TARGET_VENDOR=""
++CT_TOOLCHAIN_ENABLE_NLS=y
++CT_BINUTILS_PLUGINS=y
+
+# Build:
++CT_EXTRA_FLAGS_FOR_HOST="-fno-stack-protector -U_FORTIFY_SOURCE"
++# CT_CC_GCC_ENABLE_TARGET_OPTSPACE is not set
++# CT_BINUTILS_FOR_TARGET is not set
++# CT_CC_STATIC_LIBSTDCXX is not set
++CT_CC_GCC_DISABLE_PCH=y
++CT_CC_GCC_BUILD_ID=y
++CT_LIBC_VERSION="2.13"
++CT_MPFR_VERSION="3.0.1"
++CT_PPL_VERSION="0.11.2"
++CT_CLOOG_VERSION="0.15.11"
++CT_MPC_VERSION="0.9"
+
++CT_CROSS_EXTRAS=y
++CT_CROSS_EXTRAS_pkg_config=y
+
+# For Linaro versions:
++CT_EXPERIMENTAL=y
++CT_TOOLCHAIN_PKGVERSION="Linaro GCC 2012.03"
++CT_TOOLCHAIN_BUGURL="https://bugs.launchpad.net/gcc-linaro"
+
+# Save to make development easier:
++CT_DEBUG_CT=y
++# CT_DEBUG_PAUSE_STEPS is not set
++CT_DEBUG_CT_SAVE_STEPS=y
++CT_DEBUG_CT_SAVE_STEPS_GZIP=y
+
+# Paths:
++CT_LOCAL_TARBALLS_DIR="${CT_TOP_DIR}/tarballs"
++CT_PREFIX_DIR="${CT_TOP_DIR}/install"
++CT_USE_MIRROR=y
++CT_MIRROR_BASE_URL="http://launchpad.net/linaro-toolchain-binaries/support/01/+download"
++CT_SYSROOT_NAME="libc"
+
+# Documentation and manuals:
+-CT_REMOVE_DOCS=y
++# CT_REMOVE_DOCS is not set
++CT_BUILD_MANUALS=y
++# CT_INSTALL_DIR_RO is not set

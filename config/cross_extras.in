@@ -1,0 +1,27 @@
+# Cross extra tools config options
+
+if EXPERIMENTAL
+
+menu "Extra cross build tools"
+
+config CROSS_EXTRAS
+    bool
+    prompt "Build some extra cross build tools"
+
+if CROSS_EXTRAS
+
+config CROSS_EXTRAS_pkg_config
+    bool
+    prompt "pkg-config"
+    help
+      pkg-config lets applications discover if a package is installed
+      and what compiler flags are needed to use it.
+
+      Select to install a $TARGET-pkg-config.  This script
+      automatically relocates.
+
+endif
+
+endmenu
+
+endif

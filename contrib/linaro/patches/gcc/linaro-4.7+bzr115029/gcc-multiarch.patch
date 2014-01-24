@@ -1,0 +1,663 @@
+# DP: Add multiarch support to GCC.
+# DP:
+# DP: Convert the multilib option to a target triplet,
+# DP: add multiarch include directories and libraries path:
+# DP:	/usr/local/include/<arch>-linux-gnu
+# DP:	/usr/include/<arch>-linux-gnu
+# DP:	/usr/lib/<arch>-linux-gnu
+# DP: to the system paths.
+
+2011-08-18  Matthias Klose  <doko@ubuntu.com>
+
+	* doc/invoke.texi: Document -print-multiarch.
+	* Makefile.in (s-mlib): Pass MULTIARCH_DIRNAME to genmultilib.
+	* genmultilib: Add new option for the multiarch name.
+	* gcc.c (multiarch_dir): Define.
+	(for_each_path): Search for multiarch suffixes.
+	(driver_handle_option): Handle multiarch option.
+	(do_spec_1): Pass -imultiarch if defined.
+	(main): Print multiarch.
+	(set_multilib_dir): Separate multilib and multiarch names
+	from multilib_select.
+	(print_multilib_info): Ignore multiarch names in multilib_select.
+	* incpath.c (add_standard_paths): Search the multiarch include dirs.
+	* cppdeault.h (default_include): Document multiarch in multilib
+	member.
+	* cppdefault.c: [LOCAL_INCLUDE_DIR, STANDARD_INCLUDE_DIR] Add an
+        include directory for multiarch directories.
+	* common.opt: New options --print-multiarch and -imultilib.
+	* config/s390/t-linux64: Add multiarch names in MULTILIB_OSDIRNAMES.
+	* config/sparc/t-linux64: Likewise.
+	* config/powerpc/t-linux64: Likewise.
+	* config/i386/t-linux64: Likewise.
+	* config/mips/t-linux64: Likewise.
+	* config/alpha/t-linux: Define MULTIARCH_DIRNAME.
+	* config/arm/t-linux: Likewise.
+	* config/i386/t-linux: Likewise.
+	* config/pa/t-linux: Likewise.
+	* config/sparc/t-linux: Likewise.
+	* config/ia64/t-glibc: Define MULTIARCH_DIRNAME for linux target.
+
+
+--- a/gcc/incpath.c	(revision 182390)
++++ b/gcc/incpath.c	(working copy)
+@@ -150,8 +150,14 @@
+ 	      if (!filename_ncmp (p->fname, cpp_GCC_INCLUDE_DIR, len))
+ 		{
+ 		  char *str = concat (iprefix, p->fname + len, NULL);
+-		  if (p->multilib && imultilib)
++		  if (p->multilib == 1 && imultilib)
+ 		    str = concat (str, dir_separator_str, imultilib, NULL);
++		  else if (p->multilib == 2)
++		    {
++		      if (!imultiarch)
++			continue;
++		      str = concat (str, dir_separator_str, imultiarch, NULL);
++		    }
+ 		  add_path (str, SYSTEM, p->cxx_aware, false);
+ 		}
+ 	    }
+@@ -195,8 +201,14 @@
+ 	  else
+ 	    str = update_path (p->fname, p->component);
+ 
+-	  if (p->multilib && imultilib)
++	  if (p->multilib == 1 && imultilib)
+ 	    str = concat (str, dir_separator_str, imultilib, NULL);
++	  else if (p->multilib == 2)
++	    {
++	      if (!imultiarch)
++		continue;
++	      str = concat (str, dir_separator_str, imultiarch, NULL);
++	    }
+ 
+ 	  add_path (str, SYSTEM, p->cxx_aware, false);
+ 	}
+--- a/gcc/gcc.c	(revision 182390)
++++ b/gcc/gcc.c	(working copy)
+@@ -1147,6 +1147,11 @@
+    set_multilib_dir based on the compilation options.  */
+ 
+ static const char *multilib_os_dir;
++
++/* Subdirectory to use for locating libraries in multiarch conventions.  Set by
++   set_multilib_dir based on the compilation options.  */
++
++static const char *multiarch_dir;
+ 
+ /* Structure to keep track of the specs that have been defined so far.
+    These are accessed using %(specname) in a compiler or link
+@@ -2072,6 +2077,7 @@
+   struct prefix_list *pl;
+   const char *multi_dir = NULL;
+   const char *multi_os_dir = NULL;
++  const char *multiarch_suffix = NULL;
+   const char *multi_suffix;
+   const char *just_multi_suffix;
+   char *path = NULL;
+@@ -2089,11 +2095,14 @@
+     }
+   if (do_multi && multilib_os_dir && strcmp (multilib_os_dir, ".") != 0)
+     multi_os_dir = concat (multilib_os_dir, dir_separator_str, NULL);
++  if (multiarch_dir)
++    multiarch_suffix = concat (multiarch_dir, dir_separator_str, NULL);
+ 
+   while (1)
+     {
+       size_t multi_dir_len = 0;
+       size_t multi_os_dir_len = 0;
++      size_t multiarch_len = 0;
+       size_t suffix_len;
+       size_t just_suffix_len;
+       size_t len;
+@@ -2102,16 +2111,15 @@
+ 	multi_dir_len = strlen (multi_dir);
+       if (multi_os_dir)
+ 	multi_os_dir_len = strlen (multi_os_dir);
++      if (multiarch_suffix)
++	multiarch_len = strlen (multiarch_suffix);
+       suffix_len = strlen (multi_suffix);
+       just_suffix_len = strlen (just_multi_suffix);
+ 
+       if (path == NULL)
+ 	{
+ 	  len = paths->max_len + extra_space + 1;
+-	  if (suffix_len > multi_os_dir_len)
+-	    len += suffix_len;
+-	  else
+-	    len += multi_os_dir_len;
++	  len += MAX (MAX (suffix_len, multi_os_dir_len), multiarch_len);
+ 	  path = XNEWVEC (char, len);
+ 	}
+ 
+@@ -2140,6 +2148,16 @@
+ 		break;
+ 	    }
+ 
++	  /* Now try the multiarch path.  */
++	  if (!skip_multi_dir
++	      && !pl->require_machine_suffix && multiarch_dir)
++	    {
++	      memcpy (path + len, multiarch_suffix, multiarch_len + 1);
++	      ret = callback (path, callback_info);
++	      if (ret)
++		break;
++	    }
++
+ 	  /* Now try the base path.  */
+ 	  if (!pl->require_machine_suffix
+ 	      && !(pl->os_multilib ? skip_multi_os_dir : skip_multi_dir))
+@@ -2970,6 +2970,9 @@
+   fputs (_("  -print-libgcc-file-name  Display the name of the compiler's companion library\n"), stdout);
+   fputs (_("  -print-file-name=<lib>   Display the full path to library <lib>\n"), stdout);
+   fputs (_("  -print-prog-name=<prog>  Display the full path to compiler component <prog>\n"), stdout);
++  fputs (_("\
++  -print-multiarch         Display the target's normalized GNU triplet, used as\n\
++                           a component in the library path\n"), stdout);
+   fputs (_("  -print-multi-directory   Display the root directory for versions of libgcc\n"), stdout);
+   fputs (_("\
+   -print-multi-lib         Display the mapping between command line options and\n\
+@@ -3228,6 +3246,7 @@
+     case OPT_print_multi_directory:
+     case OPT_print_sysroot:
+     case OPT_print_multi_os_directory:
++    case OPT_print_multiarch:
+     case OPT_print_sysroot_headers_suffix:
+     case OPT_time:
+     case OPT_wrapper:
+@@ -4880,6 +4899,15 @@
+ 		  do_spec_1 (" ", 0, NULL);
+ 		}
+ 
++	      if (multiarch_dir)
++		{
++		  do_spec_1 ("-imultiarch", 1, NULL);
++		  /* Make this a separate argument.  */
++		  do_spec_1 (" ", 0, NULL);
++		  do_spec_1 (multiarch_dir, 1, NULL);
++		  do_spec_1 (" ", 0, NULL);
++		}
++
+ 	      if (gcc_exec_prefix)
+ 		{
+ 		  do_spec_1 ("-iprefix", 1, NULL);
+@@ -6497,6 +6525,15 @@
+       return (0);
+     }
+ 
++  if (print_multiarch)
++    {
++      if (multiarch_dir == NULL)
++	printf ("\n");
++      else
++	printf ("%s\n", multiarch_dir);
++      return (0);
++    }
++
+   if (print_sysroot)
+     {
+       if (target_system_root)
+@@ -7472,10 +7509,26 @@
+ 	    q++;
+ 	  if (q < end)
+ 	    {
+-	      char *new_multilib_os_dir = XNEWVEC (char, end - q);
++	      const char *q2 = q + 1;
++	      char *new_multilib_os_dir;
++
++	      while (q2 < end && *q2 != ':')
++		q2++;
++	      if (*q2 == ':')
++		end = q2;
++	      new_multilib_os_dir = XNEWVEC (char, end - q);
+ 	      memcpy (new_multilib_os_dir, q + 1, end - q - 1);
+ 	      new_multilib_os_dir[end - q - 1] = '\0';
+-	      multilib_os_dir = new_multilib_os_dir;
++	      multilib_os_dir = *new_multilib_os_dir ? new_multilib_os_dir : ".";
++
++	      end = this_path + this_path_len;
++	      if (q2 < end && *q2 == ':')
++		{
++		  char *new_multiarch_dir = XNEWVEC (char, end - q2);
++		  memcpy (new_multiarch_dir, q2 + 1, end - q2 - 1);
++		  new_multiarch_dir[end - q2 - 1] = '\0';
++		  multiarch_dir = new_multiarch_dir;
++		}
+ 	      break;
+ 	    }
+ 	}
+@@ -7537,7 +7590,7 @@
+       /* When --disable-multilib was used but target defines
+ 	 MULTILIB_OSDIRNAMES, entries starting with .: are there just
+ 	 to find multilib_os_dir, so skip them from output.  */
+-      if (this_path[0] == '.' && this_path[1] == ':')
++      if (this_path[0] == '.' && this_path[1] == ':' && this_path[2] != ':')
+ 	skip = 1;
+ 
+       /* Check for matches with the multilib_exclusions. We don't bother
+--- a/gcc/genmultilib	(revision 182390)
++++ b/gcc/genmultilib	(working copy)
+@@ -84,6 +84,8 @@
+ # This argument can be used together with MULTILIB_EXCEPTIONS and will take
+ # effect after the MULTILIB_EXCEPTIONS.
+ 
++# The optional nine argument is the multiarch name.
++
+ # The last option should be "yes" if multilibs are enabled.  If it is not
+ # "yes", all GCC multilib dir names will be ".".
+ 
+@@ -133,7 +135,8 @@
+ exclusions=$6
+ osdirnames=$7
+ multilib_required=$8
+-enable_multilib=$9
++multiarch=$9
++enable_multilib=${10}
+ 
+ echo "static const char *const multilib_raw[] = {"
+ 
+@@ -261,6 +264,9 @@
+ # names.
+ toosdirnames=
+ defaultosdirname=
++if [ -n "${multiarch}" ]; then
++  defaultosdirname=::${multiarch}
++fi
+ if [ -n "${osdirnames}" ]; then
+   set x ${osdirnames}
+   shift
+@@ -268,6 +274,9 @@
+     case "$1" in
+       .=*)
+         defaultosdirname=`echo $1 | sed 's|^.=|:|'`
++	if [ -n "${multiarch}" ]; then
++	  defaultosdirname=${defaultosdirname}:${multiarch}
++	fi
+ 	shift
+ 	;;
+       *=*)
+@@ -353,13 +362,13 @@
+     dirout=`echo ${combo} | sed -e 's/=/-/g'`
+   fi
+   # Remove the leading and trailing slashes.
+-  dirout=`echo ${dirout} | sed -e 's|^/||' -e 's|/$||g'`
++  dirout=`echo ${dirout} | sed -e 's|^/||' -e 's|/*:/*|:|' -e 's|/$||g'`
+ 
+   # Use the OS directory names rather than the option names.
+   if [ -n "${toosdirnames}" ]; then
+     osdirout=`echo ${combo} | sed ${toosdirnames}`
+     # Remove the leading and trailing slashes.
+-    osdirout=`echo ${osdirout} | sed -e 's|^/||' -e 's|/$||g'`
++    osdirout=`echo ${osdirout} | sed -e 's|^/||' -e 's|/*:/*|:|' -e 's|/$||g'`
+     if [ "x${enable_multilib}" != xyes ]; then
+       dirout=".:${osdirout}"
+       disable_multilib=yes
+--- a/gcc/configure.ac	(revision 182390)
++++ b/gcc/configure.ac	(working copy)
+@@ -620,6 +620,21 @@
+ [], [enable_multilib=yes])
+ AC_SUBST(enable_multilib)
+ 
++# Determine whether or not multiarch is enabled.
++AC_ARG_ENABLE(multiarch,
++[AS_HELP_STRING([--enable-multiarch],
++		[enable support for multiarch paths])],
++[case "${withval}" in
++yes|no|auto-detect) enable_multiarch=$withval;;
++*) AC_MSG_ERROR(bad value ${withval} given for --enable-multiarch option) ;;
++esac], [enable_multiarch=auto-detect])
++AC_MSG_CHECKING(for multiarch configuration)
++AC_SUBST(enable_multiarch)
++AC_MSG_RESULT($enable_multiarch)
++
++# needed for setting the multiarch name on ARM
++AC_SUBST(with_float)
++
+ # Enable __cxa_atexit for C++.
+ AC_ARG_ENABLE(__cxa_atexit,
+ [AS_HELP_STRING([--enable-__cxa_atexit], [enable __cxa_atexit for C++])],
+--- a/gcc/cppdefault.c	(revision 182390)
++++ b/gcc/cppdefault.c	(working copy)
+@@ -60,6 +60,7 @@
+ #endif
+ #ifdef LOCAL_INCLUDE_DIR
+     /* /usr/local/include comes before the fixincluded header files.  */
++    { LOCAL_INCLUDE_DIR, 0, 0, 1, 1, 2 },
+     { LOCAL_INCLUDE_DIR, 0, 0, 1, 1, 0 },
+ #endif
+ #ifdef PREFIX_INCLUDE_DIR
+@@ -87,6 +88,7 @@
+ #endif
+ #ifdef NATIVE_SYSTEM_HEADER_DIR
+     /* /usr/include comes dead last.  */
++    { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 2 },
+     { NATIVE_SYSTEM_HEADER_DIR, NATIVE_SYSTEM_HEADER_COMPONENT, 0, 0, 1, 0 },
+ #endif
+     { 0, 0, 0, 0, 0, 0 }
+--- a/gcc/cppdefault.h	(revision 182390)
++++ b/gcc/cppdefault.h	(working copy)
+@@ -43,9 +43,11 @@
+ 				   C++.  */
+   const char add_sysroot;	/* FNAME should be prefixed by
+ 				   cpp_SYSROOT.  */
+-  const char multilib;		/* FNAME should have the multilib path
+-				   specified with -imultilib
+-				   appended.  */
++  const char multilib;		/* FNAME should have appended
++				   - the multilib path specified with -imultilib
++				     when 1 is passed,
++				   - the multiarch path specified with
++				     -imultiarch, when 2 is passed.  */
+ };
+ 
+ extern const struct default_include cpp_include_defaults[];
+--- a/gcc/common.opt	(revision 182390)
++++ b/gcc/common.opt	(working copy)
+@@ -345,6 +345,9 @@
+ -print-multi-os-directory
+ Driver Alias(print-multi-os-directory)
+ 
++-print-multiarch
++Driver Alias(print-multiarch)
++
+ -print-prog-name
+ Driver Separate Alias(print-prog-name=)
+ 
+@@ -2268,6 +2271,10 @@
+ Common Joined Var(plugindir_string) Init(0)
+ -iplugindir=<dir>	Set <dir> to be the default plugin directory
+ 
++imultiarch
++Common Joined Separate RejectDriver Var(imultiarch) Init(0)
++-imultiarch <dir>	Set <dir> to be the multiarch include subdirectory
++
+ l
+ Driver Joined Separate
+ 
+@@ -2325,6 +2332,9 @@
+ 
+ print-multi-os-directory
+ Driver Var(print_multi_os_directory)
++ 
++print-multiarch
++Driver Var(print_multiarch)
+ 
+ print-prog-name=
+ Driver JoinedOrMissing Var(print_prog_name)
+--- a/gcc/config.gcc	(revision 182390)
++++ b/gcc/config.gcc	(working copy)
+@@ -1508,7 +1508,7 @@
+ 	;;
+ ia64*-*-linux*)
+ 	tm_file="${tm_file} dbxelf.h elfos.h gnu-user.h linux.h glibc-stdint.h ia64/sysv4.h ia64/linux.h"
+-	tmake_file="${tmake_file} ia64/t-ia64 t-libunwind"
++	tmake_file="${tmake_file} ia64/t-ia64 ia64/t-glibc t-libunwind"
+ 	target_cpu_default="MASK_GNU_AS|MASK_GNU_LD"
+ 	;;
+ ia64*-*-hpux*)
+@@ -2012,6 +2012,7 @@
+ 		;;
+ 	    *)
+ 		tm_file="${tm_file} rs6000/linux.h glibc-stdint.h"
++		tmake_file="$tmake_file rs6000/t-linux"
+ 		;;
+ 	esac
+ 	case ${target} in
+@@ -3467,10 +3468,14 @@
+ 
+ 	i[34567]86-*-darwin* | x86_64-*-darwin*)
+ 		;;
+-	i[34567]86-*-linux* | x86_64-*-linux* | \
+-	  i[34567]86-*-kfreebsd*-gnu | x86_64-*-kfreebsd*-gnu | \
+-	  i[34567]86-*-gnu*)
++	i[34567]86-*-linux* | x86_64-*-linux*)
+ 		;;
++	i[34567]86-*-kfreebsd*-gnu | x86_64-*-kfreebsd*-gnu)
++		tmake_file="${tmake_file} i386/t-linux i386/t-kfreebsd"
++		;;
++	i[34567]86-*-gnu*)
++		tmake_file="${tmake_file} i386/t-linux i386/t-gnu"
++		;;
+ 	i[34567]86-*-solaris2* | x86_64-*-solaris2.1[0-9]*)
+ 		;;
+ 	i[34567]86-*-cygwin* | i[34567]86-*-mingw* | x86_64-*-mingw*)
+--- a/gcc/Makefile.in	(revision 182390)
++++ b/gcc/Makefile.in	(working copy)
+@@ -352,6 +352,17 @@
+ 
+ enable_plugin = @enable_plugin@
+ 
++# Multiarch support
++enable_multiarch = @enable_multiarch@
++with_float = @with_float@
++ifeq ($(enable_multiarch),yes)
++  if_multiarch = $(1)
++else ifeq ($(enable_multiarch),auto-detect)
++  if_multiarch = $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib/*/crti.o),$(1))
++else
++  if_multiarch =
++endif
++
+ CPPLIB = ../libcpp/libcpp.a
+ CPPINC = -I$(srcdir)/../libcpp/include
+ 
+@@ -1845,10 +1845,11 @@
+ 	    "$(MULTILIB_EXCLUSIONS)" \
+ 	    "$(MULTILIB_OSDIRNAMES)" \
+ 	    "$(MULTILIB_REQUIRED)" \
++	    "$(MULTIARCH_DIRNAME)" \
+ 	    "@enable_multilib@" \
+ 	    > tmp-mlib.h; \
+ 	else \
+-	  $(SHELL) $(srcdir)/genmultilib '' '' '' '' '' '' '' '' no\
++	  $(SHELL) $(srcdir)/genmultilib '' '' '' '' '' '' '' '' "$(MULTIARCH_DIRNAME)" no\
+ 	    > tmp-mlib.h; \
+ 	fi
+ 	$(SHELL) $(srcdir)/../move-if-change tmp-mlib.h multilib.h
+--- a/gcc/config/alpha/t-linux	(revision 0)
++++ b/gcc/config/alpha/t-linux	(revision 0)
+@@ -0,0 +1 @@
++MULTIARCH_DIRNAME = $(call if_multiarch,alpha-linux-gnu)
+--- a/gcc/config/s390/t-linux64	(revision 182390)
++++ b/gcc/config/s390/t-linux64	(working copy)
+@@ -7,4 +7,5 @@
+ 
+ MULTILIB_OPTIONS = m64/m31
+ MULTILIB_DIRNAMES = 64 32
+-MULTILIB_OSDIRNAMES = ../lib64 $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)
++MULTILIB_OSDIRNAMES = ../lib64$(call if_multiarch,:s390x-linux-gnu)
++MULTILIB_OSDIRNAMES += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:s390-linux-gnu)
+--- a/gcc/config/sparc/t-linux64	(revision 182390)
++++ b/gcc/config/sparc/t-linux64	(working copy)
+@@ -26,4 +26,5 @@
+ 
+ MULTILIB_OPTIONS = m64/m32
+ MULTILIB_DIRNAMES = 64 32
+-MULTILIB_OSDIRNAMES = ../lib64 $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)
++MULTILIB_OSDIRNAMES = ../lib64$(call if_multiarch,:sparc64-linux-gnu)
++MULTILIB_OSDIRNAMES += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:sparc-linux-gnu)
+--- a/gcc/config/sparc/t-linux	(revision 0)
++++ b/gcc/config/sparc/t-linux	(revision 0)
+@@ -0,0 +1 @@
++MULTIARCH_DIRNAME = $(call if_multiarch,sparc-linux-gnu)
+--- a/gcc/config/i386/t-kfreebsd	(revision 0)
++++ b/gcc/config/i386/t-kfreebsd	(revision 0)
+@@ -0,0 +1,5 @@
++MULTIARCH_DIRNAME = $(call if_multiarch,i386-kfreebsd-gnu)
++
++# MULTILIB_OSDIRNAMES are set in t-linux64.
++KFREEBSD_OS = $(filter kfreebsd%, $(word 3, $(subst -, ,$(target))))
++MULTILIB_OSDIRNAMES := $(subst linux,$(KFREEBSD_OS),$(MULTILIB_OSDIRNAMES))
+--- a/gcc/config/i386/t-gnu	(revision 0)
++++ b/gcc/config/i386/t-gnu	(revision 0)
+@@ -0,0 +1 @@
++MULTIARCH_DIRNAME = $(call if_multiarch,i386-gnu)
+--- a/gcc/config/i386/t-linux	(revision 0)
++++ b/gcc/config/i386/t-linux	(revision 0)
+@@ -0,0 +1 @@
++MULTIARCH_DIRNAME = $(call if_multiarch,i386-linux-gnu)
+--- a/gcc/config/i386/t-linux64	(revision 182390)
++++ b/gcc/config/i386/t-linux64	(working copy)
+@@ -34,6 +34,6 @@
+ comma=,
+ MULTILIB_OPTIONS    = $(subst $(comma),/,$(TM_MULTILIB_CONFIG))
+ MULTILIB_DIRNAMES   = $(patsubst m%, %, $(subst /, ,$(MULTILIB_OPTIONS)))
+-MULTILIB_OSDIRNAMES = m64=../lib64
+-MULTILIB_OSDIRNAMES+= m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)
++MULTILIB_OSDIRNAMES = m64=../lib64$(call if_multiarch,:x86_64-linux-gnu)
++MULTILIB_OSDIRNAMES+= m32=$(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:i386-linux-gnu)
+ MULTILIB_OSDIRNAMES+= mx32=../libx32
+--- a/gcc/config/ia64/t-glibc	(revision 0)
++++ b/gcc/config/ia64/t-glibc	(revision 0)
+@@ -0,0 +1,3 @@
++ifneq (,$(findstring linux, $(target)))
++MULTIARCH_DIRNAME = $(call if_multiarch,ia64-linux-gnu)
++endif
+--- a/gcc/config/m68k/t-linux	(revision 182390)
++++ b/gcc/config/m68k/t-linux	(working copy)
+@@ -19,6 +19,8 @@
+ # Only include multilibs for 680x0 and ColdFire CPUs with an MMU.
+ M68K_MLIB_CPU += && ((CPU ~ "^m680") || (CPU ~ "^mcf")) && (FLAGS ~ "FL_MMU")
+ 
++MULTIARCH_DIRNAME = $(call if_multiarch,m68k-linux-gnu)
++
+ # This rule uses MULTILIB_MATCHES to generate a definition of
+ # SYSROOT_SUFFIX_SPEC.
+ sysroot-suffix.h: $(srcdir)/config/m68k/print-sysroot-suffix.sh
+--- a/gcc/config/rs6000/t-spe	(revision 182390)
++++ b/gcc/config/rs6000/t-spe	(working copy)
+@@ -71,3 +71,6 @@
+ 			  mabi=altivec/mlittle \
+ 			  maltivec/mlittle \
+ 			  maltivec/mabi=altivec/mlittle
++
++MULTIARCH_DIRNAME = powerpc-linux-gnuspe$(if $(findstring rs6000/e500-double.h, $(tm_file)),,v1)
++
+--- a/gcc/config/rs6000/t-linux64	(revision 182390)
++++ b/gcc/config/rs6000/t-linux64	(working copy)
+@@ -31,5 +31,7 @@
+ MULTILIB_EXTRA_OPTS     = fPIC mstrict-align
+ MULTILIB_EXCEPTIONS     = m64/msoft-float
+ MULTILIB_EXCLUSIONS     = m64/!m32/msoft-float
+-MULTILIB_OSDIRNAMES	= ../lib64 $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib) nof
++MULTILIB_OSDIRNAMES	= ../lib64$(call if_multiarch,:powerpc64-linux-gnu)
++MULTILIB_OSDIRNAMES    += $(if $(wildcard $(shell echo $(SYSTEM_HEADER_DIR))/../../usr/lib32),../lib32,../lib)$(call if_multiarch,:powerpc-linux-gnu)
++MULTILIB_OSDIRNAMES    += nof
+ MULTILIB_MATCHES        = $(MULTILIB_MATCHES_FLOAT)
+--- a/gcc/config/rs6000/t-linux	(revision 0)
++++ b/gcc/config/rs6000/t-linux	(revision 0)
+@@ -0,0 +1 @@
++MULTIARCH_DIRNAME = powerpc-linux-gnu
+--- a/gcc/config/arm/t-linux-eabi	(revision 182390)
++++ b/gcc/config/arm/t-linux-eabi	(working copy)
+@@ -24,3 +24,6 @@
+ #MULTILIB_OPTIONS     += mcpu=fa606te/mcpu=fa626te/mcpu=fmp626/mcpu=fa726te
+ #MULTILIB_DIRNAMES    += fa606te fa626te fmp626 fa726te
+ #MULTILIB_EXCEPTIONS  += *mthumb/*mcpu=fa606te *mthumb/*mcpu=fa626te *mthumb/*mcpu=fmp626 *mthumb/*mcpu=fa726te*
++
++ARM_EB = $(if $(findstring TARGET_BIG_ENDIAN_DEFAULT=1, $(tm_defines)),eb)
++MULTIARCH_DIRNAME = $(call if_multiarch,arm$(ARM_EB)-linux-gnueabi$(if $(filter hard,$(with_float)),hf))
+--- a/gcc/config/pa/t-linux	(revision 0)
++++ b/gcc/config/pa/t-linux	(revision 0)
+@@ -0,0 +1 @@
++MULTIARCH_DIRNAME = $(call if_multiarch,hppa-linux-gnu)
+--- a/gcc/config/mips/t-linux64	(revision 182390)
++++ b/gcc/config/mips/t-linux64	(working copy)
+@@ -18,4 +18,9 @@
+ 
+ MULTILIB_OPTIONS = mabi=n32/mabi=32/mabi=64
+ MULTILIB_DIRNAMES = n32 32 64
+-MULTILIB_OSDIRNAMES = ../lib32 ../lib ../lib64
++MIPS_EL = $(if $(filter %el, $(firstword $(subst -, ,$(target)))),el)
++MIPS_SOFT = $(if $(filter MASK_SOFT_FLOAT_ABI, $(target_cpu_default)),soft)
++MULTILIB_OSDIRNAMES = \
++	../lib32$(call if_multiarch,:mips64$(MIPS_EL)-linux-gnuabin32$(MIPS_SOFT)) \
++	../lib$(call if_multiarch,:mips$(MIPS_EL)-linux-gnu$(MIPS_SOFT)) \
++	../lib64$(call if_multiarch,:mips64$(MIPS_EL)-linux-gnuabi64$(MIPS_SOFT))
+--- a/libstdc++-v3/python/hook.in
++++ b/libstdc++-v3/python/hook.in
+@@ -47,7 +47,10 @@
+     libdir = libdir[len (prefix):]
+ 
+     # Compute the ".."s needed to get from libdir to the prefix.
+-    dotdots = ('..' + os.sep) * len (libdir.split (os.sep))
++    backdirs = len (libdir.split (os.sep))
++    if not os.path.basename(os.path.dirname(__file__)).startswith('lib'):
++        backdirs += 1 # multiarch subdir
++    dotdots = ('..' + os.sep) * backdirs
+ 
+     objfile = gdb.current_objfile ().filename
+     dir_ = os.path.join (os.path.dirname (objfile), dotdots, pythondir)
+--- a/gcc/configure	2012-04-10 09:54:30 +0000
++++ b/gcc/configure	2012-04-12 02:39:34 +0000
+@@ -764,6 +764,8 @@
+ enable_shared
+ enable_fixed_point
+ enable_decimal_float
++with_float
++enable_multiarch
+ enable_multilib
+ ENABLE_BUILD_WITH_CXX
+ coverage_flags
+@@ -875,6 +877,7 @@
+ enable_build_with_cxx
+ with_stabs
+ enable_multilib
++enable_multiarch
+ enable___cxa_atexit
+ enable_decimal_float
+ enable_fixed_point
+@@ -1576,6 +1579,7 @@
+                           enable detailed memory allocation stats gathering
+   --enable-build-with-cxx build with C++ compiler instead of C compiler
+   --enable-multilib       enable library support for multiple ABIs
++  --enable-multiarch      enable support for multiarch paths
+   --enable-__cxa_atexit   enable __cxa_atexit for C++
+   --enable-decimal-float={no,yes,bid,dpd}
+ 			enable decimal float extension to C.  Selecting 'bid'
+@@ -7045,6 +7049,26 @@
+ 
+ 
+ 
++# Determine whether or not multiarch is enabled.
++# Check whether --enable-multiarch was given.
++if test "${enable_multiarch+set}" = set; then :
++  enableval=$enable_multiarch; case "${withval}" in
++yes|no|auto-detect) enable_multiarch=$withval;;
++*) as_fn_error "bad value ${withval} given for --enable-multiarch option" "$LINENO" 5 ;;
++esac
++else
++  enable_multiarch=auto-detect
++fi
++
++{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for multiarch configuration" >&5
++$as_echo_n "checking for multiarch configuration... " >&6; }
++
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_multiarch" >&5
++$as_echo "$enable_multiarch" >&6; }
++
++# needed for setting the multiarch name on ARM
++
++
+ # Enable __cxa_atexit for C++.
+ # Check whether --enable-__cxa_atexit was given.
+ if test "${enable___cxa_atexit+set}" = set; then :
+@@ -17971,7 +17995,7 @@
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 17974 "configure"
++#line 17998 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+@@ -18077,7 +18101,7 @@
+   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
+   lt_status=$lt_dlunknown
+   cat > conftest.$ac_ext <<_LT_EOF
+-#line 18080 "configure"
++#line 18104 "configure"
+ #include "confdefs.h"
+ 
+ #if HAVE_DLFCN_H
+

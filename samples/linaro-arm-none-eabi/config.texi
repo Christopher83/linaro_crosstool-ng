@@ -1,0 +1,2 @@
+@set TARGET arm-none-eabi
+@set TRIPLET arm-none-eabi

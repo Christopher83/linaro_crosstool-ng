@@ -1,0 +1,33 @@
+Only in sysroot/usr/include/arm-linux-gnueabi: rpc
+diff -ur sysroot.orig/usr/include/arm-linux-gnueabi/sys/types.h sysroot/usr/include/arm-linux-gnueabi/sys/types.h
+--- sysroot.orig/usr/include/arm-linux-gnueabi/sys/types.h	2011-10-07 13:03:38.000000000 +1300
++++ sysroot/usr/include/arm-linux-gnueabi/sys/types.h	2011-11-18 10:48:28.333752230 +1300
+@@ -114,7 +114,10 @@
+ #ifdef	__USE_BSD
+ # ifndef __daddr_t_defined
+ typedef __daddr_t daddr_t;
++#  if ! defined(caddr_t) && ! defined(__caddr_t_defined)
+ typedef __caddr_t caddr_t;
++#   define __caddr_t_defined
++#  endif
+ #  define __daddr_t_defined
+ # endif
+ #endif
+diff -ur sysroot.orig/usr/include/rpc/types.h sysroot/usr/include/rpc/types.h
+--- sysroot.orig/usr/include/rpc/types.h	2011-10-07 13:07:15.000000000 +1300
++++ sysroot/usr/include/rpc/types.h	2011-11-18 10:48:07.333732535 +1300
+@@ -81,7 +81,10 @@
+ #endif
+ #ifndef __daddr_t_defined
+ typedef __daddr_t daddr_t;
++# if ! defined(caddr_t) && ! defined(__caddr_t_defined)
+ typedef __caddr_t caddr_t;
++#  define __caddr_t_defined
++# endif
+ # define __daddr_t_defined
+ #endif
+ 
+Only in sysroot/usr/include/rpc: types.h.orig
+Only in sysroot/usr/include: sys
+Only in sysroot/usr/include: types.h.orig
+Only in sysroot/usr/include: types.h.rej

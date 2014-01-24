@@ -1,0 +1,4 @@
+reporter_name="Zhenqiang Chen"
+reporter_url="http://wiki.linaro.org/"
+reporter_comment="Experimental ARM AArch64 big endian bare metal build."
+

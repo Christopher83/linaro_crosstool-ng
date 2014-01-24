@@ -1,0 +1,4 @@
+@set TARGET aarch64-none-elf
+@set TRIPLET aarch64-none-elf
+@set ARCH ARMv8-A
+@set ABI 'hard float'
