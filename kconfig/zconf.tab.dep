@@ -1,4 +1,0 @@
-kconfig/zconf.tab.o kconfig/zconf.tab.dep: kconfig/zconf.tab.c kconfig/lkc.h kconfig/expr.h \
- kconfig/lkc_proto.h kconfig/zconf.hash.c kconfig/lex.zconf.c \
- kconfig/util.c kconfig/confdata.c kconfig/expr.c kconfig/symbol.c \
- kconfig/menu.c

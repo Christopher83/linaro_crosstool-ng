@@ -1,2 +1,0 @@
-kconfig/mconf.o kconfig/mconf.dep: kconfig/mconf.c kconfig/lkc.h kconfig/expr.h kconfig/lkc_proto.h \
- kconfig/lxdialog/dialog.h

@@ -10,9 +10,9 @@ scripts/crosstool-NG.sh
 scripts/saveSample.sh
 scripts/showTuple.sh
 kconfig/conf
-kconfig/?conf
-kconfig/**.o
-kconfig/**.dep
+kconfig/*conf
+kconfig/*.o
+kconfig/*.dep
 config/configure.in
 config.gen/
 .config
@@ -29,6 +29,7 @@ build.log
 targets/
 
 bin/
+builds/
 lib/
 share/
 kconfig/lxdialog/*

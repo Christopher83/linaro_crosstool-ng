@@ -1,1 +1,0 @@
-kconfig/conf.o kconfig/conf.dep: kconfig/conf.c kconfig/lkc.h kconfig/expr.h kconfig/lkc_proto.h
