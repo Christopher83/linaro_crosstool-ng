@@ -42,9 +42,9 @@ config CC_V_linaro_4_7_2014_01
     depends on CC_GCC_SHOW_LINARO
     select CC_GCC_4_7
 
-config CC_V_linaro_4_8_2014_02
+config CC_V_linaro_4_8_2014_03
     bool
-    prompt "linaro-4.8-2014.02 (EXPERIMENTAL)"
+    prompt "linaro-4.8-2014.03 (EXPERIMENTAL)"
     depends on CC_GCC_SHOW_LINARO
     select CC_GCC_4_8
 
@@ -387,7 +387,7 @@ config CC_VERSION
 # CT_INSERT_VERSION_STRING_BELOW
     default "arm-aarch64-4.7+svn191987" if CC_V_arm_aarch64_4_7_PRE
     default "linaro-4.7-2014.01" if CC_V_linaro_4_7_2014_01
-    default "linaro-4.8-2014.02" if CC_V_linaro_4_8_2014_02
+    default "linaro-4.8-2014.03" if CC_V_linaro_4_8_2014_03
     default "linaro-4.7+bzr115029" if CC_V_linaro_4_7_TIP
     default "4.7.0" if CC_V_4_7_0
     default "4.6.2" if CC_V_4_6_2
