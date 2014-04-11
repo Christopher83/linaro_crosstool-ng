@@ -1,6 +1,6 @@
 #!/bin/bash
 # 
-# (C) 2013 Bernhard Rosenkränzer <Bernhard.Rosenkranzer@linaro.org>
+# (C) 2013-2014 Bernhard Rosenkränzer <Bernhard.Rosenkranzer@linaro.org>
 # Released into the Public Domain.
 
 # Convert a human readable version identifier (e.g. 4.8)
@@ -181,3 +181,4 @@ if [ "$USED_NEWLIB" != "$CURRENT_NEWLIB" ]; then
 		cd -
 	fi
 fi
+find . -name "*.config" |xargs sed -i -e "s,^CT_TOOLCHAIN_PKGVERSION=\"Linaro.*,CT_TOOLCHAIN_PKGVERSION=\"Linaro GCC $CURRENT_GCC\",g"
