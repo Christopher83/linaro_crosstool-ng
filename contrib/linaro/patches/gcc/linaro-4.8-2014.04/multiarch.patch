@@ -1,0 +1,11 @@
+--- gcc-linaro-4.8-2014.04/gcc/Makefile.in	2014-04-15 15:44:43.253503385 +0800
++++ modified/gcc/Makefile.in	2014-04-16 11:35:04.921005431 +0800
+@@ -1818,7 +1818,7 @@
+ 	    "$(MULTILIB_EXCLUSIONS)" \
+ 	    "$(MULTILIB_OSDIRNAMES)" \
+ 	    "$(MULTILIB_REQUIRED)" \
+-	    "$(if $(MULTILIB_OSDIRNAMES),,$(MULTIARCH_DIRNAME))" \
++	    "$(MULTIARCH_DIRNAME)" \
+ 	    "$(MULTILIB_REUSE)" \
+ 	    "@enable_multilib@" \
+ 	    > tmp-mlib.h; \
