@@ -693,7 +693,7 @@ do_cc() {
 
     if [ "${CT_BUILD_MANUALS}" = "y" ]; then
         CT_DoLog EXTRA "Building the GCC manuals"
-        CT_DoExecLog ALL make ${JOBSFLAGS} pdf html
+        CT_DoExecLog ALL make pdf html
         CT_DoLog EXTRA "Installing the GCC manuals"
         CT_DoExecLog ALL make install-{pdf,html}-gcc
     fi
