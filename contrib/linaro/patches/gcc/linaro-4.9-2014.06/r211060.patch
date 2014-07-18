@@ -1,0 +1,73 @@
+Index: a/gcc/testsuite/gcc.target/aarch64/pr61325.c
+===================================================================
+--- a/gcc/testsuite/gcc.target/aarch64/pr61325.c	(revision 0)
++++ b/gcc/testsuite/gcc.target/aarch64/pr61325.c	(revision 211060)
+@@ -0,0 +1,19 @@
++/* { dg-do compile } */
++/* { dg-options "-O2" } */
++typedef unsigned int wchar_t;
++typedef long unsigned int size_t;
++
++size_t
++wcstombs(char *s , const wchar_t *pwcs , size_t n)
++{
++  int count = 0;
++  
++  if (n != 0) {
++    do {
++      if ((*s++ = (char) *pwcs++) == 0)
++        break;
++      count++;
++    } while (--n != 0);
++  }
++  return count;
++}
+Index: a/gcc/lra-constraints.c
+===================================================================
+--- a/gcc/lra-constraints.c	(revision 211059)
++++ b/gcc/lra-constraints.c	(revision 211060)
+@@ -2787,9 +2787,14 @@
+ 
+    Add reloads to the lists *BEFORE and *AFTER.  We might need to add
+    reloads to *AFTER because of inc/dec, {pre, post} modify in the
+-   address.  Return true for any RTL change.  */
++   address.  Return true for any RTL change.
++
++   The function is a helper function which does not produce all
++   transformations which can be necessary.  It does just basic steps.
++   To do all necessary transformations use function
++   process_address.  */
+ static bool
+-process_address (int nop, rtx *before, rtx *after)
++process_address_1 (int nop, rtx *before, rtx *after)
+ {
+   struct address_info ad;
+   rtx new_reg;
+@@ -2989,6 +2994,18 @@
+   return true;
+ }
+ 
++/* Do address reloads until it is necessary.  Use process_address_1 as
++   a helper function.  Return true for any RTL changes.  */
++static bool
++process_address (int nop, rtx *before, rtx *after)
++{
++  bool res = false;
++
++  while (process_address_1 (nop, before, after))
++    res = true;
++  return res;
++}
++
+ /* Emit insns to reload VALUE into a new register.  VALUE is an
+    auto-increment or auto-decrement RTX whose operand is a register or
+    memory location; so reloading involves incrementing that location.
+@@ -3273,7 +3290,7 @@
+ 	change_p = true;
+ 	lra_update_dup (curr_id, i);
+       }
+-
++  
+   if (change_p)
+     /* If we've changed the instruction then any alternative that
+        we chose previously may no longer be valid.  */

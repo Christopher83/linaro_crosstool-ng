@@ -18,7 +18,7 @@ version() {
 
 # Check the latest currently downloadable version of a Linaro project
 current() {
-	local SNAP=`curl -s http://cbuild.validation.linaro.org/snapshots/ |grep '^<a' |sed -e 's,^<a[^"]*",,;s,".*,,' |grep -v '.asc$' |grep -vE '(bzr|_rc)' |grep "${1}-linaro-.*-20[0-9][0-9]\." |sort |sed -e "s,${1}-linaro-,,;s,\.tar.*,," |grep -E '^[0-9]'`
+	local SNAP=`curl -s http://cbuild.validation.linaro.org/snapshots/ |grep '^<a' |sed -e 's,^<a[^"]*",,;s,".*,,' |grep -v '.asc$' |grep -vE '(bzr|_rc|branch-merge|integration|test)' |grep "${1}-linaro-.*-20[0-9][0-9]\.[01]" |sort |sed -e "s,${1}-linaro-,,;s,\.tar.*,," |grep -E '^[0-9]'`
 	local LATEST=""
 	local V
 	local CV
@@ -90,6 +90,7 @@ cd "`dirname $0`/../.."
 
 USED_GCC=`used CT_CC_VERSION linaro-arm-linux-gnueabihf`
 USED_GCC47=`available CC_V config/cc/gcc.in 4.7`
+USED_GCC48=`available CC_V config/cc/gcc.in 4.8`
 USED_BINUTILS=`used CT_BINUTILS_VERSION linaro-arm-linux-gnueabihf`
 USED_NEWLIB=`used CT_LIBC_VERSION linaro-arm-none-eabi`
 USED_GDB=`used CT_GDB_VERSION linaro-arm-linux-gnueabihf`
@@ -97,13 +98,25 @@ USED_EGLIBC=`used CT_LIBC_VERSION linaro-armeb-linux-gnueabihf`
 
 CURRENT_GCC=`current gcc`
 CURRENT_GCC47=`current gcc 4.7`
+CURRENT_GCC48=`current gcc 4.8`
 CURRENT_BINUTILS=`current binutils`
 CURRENT_NEWLIB=`current newlib`
 CURRENT_GDB=`current gdb`
 CURRENT_EGLIBC=`current eglibc`
 
+for i in "$@"; do
+	[ "$i" = "--without-gcc" ] && CURRENT_GCC=$USED_GCC
+	[ "$i" = "--without-gcc47" ] && CURRENT_GCC47=$USED_GCC47
+	[ "$i" = "--without-gcc48" ] && CURRENT_GCC48=$USED_GCC48
+	[ "$i" = "--without-binutils" ] && CURRENT_BINUTILS=$USED_BINUTILS
+	[ "$i" = "--without-newlib" ] && CURRENT_NEWLIB=$USED_NEWLIB
+	[ "$i" = "--without-gdb" ] && CURRENT_GDB=$USED_GDB
+	[ "$i" = "--without-eglibc" ] && CURRENT_EGLIBC=$USED_EGLIBC
+done
+
 echo "gcc: $USED_GCC -> $CURRENT_GCC"
 echo "gcc 4.7: $USED_GCC47 -> $CURRENT_GCC47"
+echo "gcc 4.8: $USED_GCC48 -> $CURRENT_GCC48"
 echo "binutils: $USED_BINUTILS -> $CURRENT_BINUTILS"
 echo "newlib: $USED_NEWLIB -> $CURRENT_NEWLIB"
 echo "gdb: $USED_GDB -> $CURRENT_GDB"
@@ -127,6 +140,16 @@ if [ "$USED_GCC47" != "$CURRENT_GCC47" ]; then
 	sed -i -e "s,^CT_CC_VERSION=\"linaro-$USED_GCC\",CT_CC_VERSION=\"linaro-$CURRENT_GCC\",;s,CT_CC_V_linaro_$USED_DASHED,CT_CC_V_linaro_$CURRENT_DASHED," samples/*/crosstool.config
 	cd contrib/linaro/patches/gcc
 	[ -d linaro-$USED_GCC47 ] && bzr mv linaro-$USED_GCC47 linaro-$CURRENT_GCC47
+	cd ../../../..
+fi
+if [ "$USED_GCC48" != "$CURRENT_GCC48" ]; then
+	echo "Updating gcc $USED_GCC48 -> $CURRENT_GCC48"
+	USED_DASHED=$(echo $USED_GCC48 |cut -d- -f1-2 |sed -e 's,\.,_,g;s,-,_,g')
+	CURRENT_DASHED=$(echo $CURRENT_GCC48 |cut -d- -f1-2 |sed -e 's,\.,_,g;s,-,_,g')
+	sed -i -e "s,CC_V_linaro_$USED_DASHED,CC_V_linaro_$CURRENT_DASHED,;s,linaro-$USED_GCC48,linaro-$CURRENT_GCC48,g" config/cc/gcc.in
+	sed -i -e "s,^CT_CC_VERSION=\"linaro-$USED_GCC\",CT_CC_VERSION=\"linaro-$CURRENT_GCC\",;s,CT_CC_V_linaro_$USED_DASHED,CT_CC_V_linaro_$CURRENT_DASHED," samples/*/crosstool.config
+	cd contrib/linaro/patches/gcc
+	[ -d linaro-$USED_GCC48 ] && bzr mv linaro-$USED_GCC48 linaro-$CURRENT_GCC48
 	cd ../../../..
 fi
 if [ "$USED_BINUTILS" != "$CURRENT_BINUTILS" ]; then

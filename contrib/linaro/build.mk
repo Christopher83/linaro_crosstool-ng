@@ -35,7 +35,7 @@ LIBC_TMP = $(subst linaro-,,$(LIBC_FULL))
 LIBC_VERSION = $(shell echo $(LIBC_TMP) | sed -e 's/-/ /')
 
 # Binary build identifier.  Default is empty. Use -01, -02, ... for respin.
-SPIN ?=
+SPIN ?= -02
 # Development build identifier.  Normally +bzr1234
 REVISION =
 
@@ -249,7 +249,7 @@ $(dstamp)common-fixup: $(dstamp)build
 	rm -rf $(FINAL)
 	cp -a $(INSTALL) $(FINAL)
 	# Remove host libiberty.a
-	rm $(FINAL)/lib/libiberty.a
+	-rm -f $(FINAL)/lib/libiberty.a
 	# Remove tmp files
 	-rm $(FINAL)/$(TRIPLET)/libc/usr/lib/crt*.o
 	-rm $(FINAL)/$(TRIPLET)/libc/usr/lib/libc.so
