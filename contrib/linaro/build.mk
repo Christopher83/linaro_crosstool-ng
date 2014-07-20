@@ -35,7 +35,7 @@ LIBC_TMP = $(subst linaro-,,$(LIBC_FULL))
 LIBC_VERSION = $(shell echo $(LIBC_TMP) | sed -e 's/-/ /')
 
 # Binary build identifier.  Default is empty. Use -01, -02, ... for respin.
-SPIN ?= -02
+SPIN ?=
 # Development build identifier.  Normally +bzr1234
 REVISION =
 
