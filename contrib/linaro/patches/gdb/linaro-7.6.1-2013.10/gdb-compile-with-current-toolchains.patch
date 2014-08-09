@@ -1,0 +1,69 @@
+--- gdb-linaro-7.6.1-2013.10/gdb/gdbserver/linux-aarch64-low.c.omv~	2014-07-30 16:10:15.972039958 +0200
++++ gdb-linaro-7.6.1-2013.10/gdb/gdbserver/linux-aarch64-low.c	2014-07-30 16:13:43.480254991 +0200
+@@ -27,6 +27,7 @@
+ #include <sys/user.h>
+ #include <sys/ptrace.h>
+ #include <sys/uio.h>
++#include <asm/ptrace.h>
+ 
+ #include "gdb_proc_service.h"
+ 
+@@ -268,7 +269,7 @@ aarch64_cannot_fetch_register (int regno
+ static void
+ aarch64_fill_gregset (struct regcache *regcache, void *buf)
+ {
+-  struct user_pt_regs *regset = buf;
++  struct user_regs_struct *regset = buf;
+   int i;
+ 
+   for (i = 0; i < AARCH64_X_REGS_NUM; i++)
+@@ -281,7 +282,7 @@ aarch64_fill_gregset (struct regcache *r
+ static void
+ aarch64_store_gregset (struct regcache *regcache, const void *buf)
+ {
+-  const struct user_pt_regs *regset = buf;
++  const struct user_regs_struct *regset = buf;
+   int i;
+ 
+   for (i = 0; i < AARCH64_X_REGS_NUM; i++)
+@@ -294,7 +295,7 @@ aarch64_store_gregset (struct regcache *
+ static void
+ aarch64_fill_fpregset (struct regcache *regcache, void *buf)
+ {
+-  struct user_fpsimd_state *regset = buf;
++  struct user_fpsimd_struct *regset = buf;
+   int i;
+ 
+   for (i = 0; i < AARCH64_V_REGS_NUM; i++)
+@@ -304,7 +305,7 @@ aarch64_fill_fpregset (struct regcache *
+ static void
+ aarch64_store_fpregset (struct regcache *regcache, const void *buf)
+ {
+-  const struct user_fpsimd_state *regset = buf;
++  const struct user_fpsimd_struct *regset = buf;
+   int i;
+ 
+   for (i = 0; i < AARCH64_V_REGS_NUM; i++)
+@@ -1242,10 +1243,10 @@ aarch64_arch_setup (void)
+ struct regset_info target_regsets[] =
+ {
+   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_PRSTATUS,
+-    sizeof (struct user_pt_regs), GENERAL_REGS,
++    sizeof (struct user_regs_struct), GENERAL_REGS,
+     aarch64_fill_gregset, aarch64_store_gregset },
+   { PTRACE_GETREGSET, PTRACE_SETREGSET, NT_FPREGSET,
+-    sizeof (struct user_fpsimd_state), FP_REGS,
++    sizeof (struct user_fpsimd_struct), FP_REGS,
+     aarch64_fill_fpregset, aarch64_store_fpregset
+   },
+   { 0, 0, 0, -1, -1, NULL, NULL }
+--- gdb-linaro-7.6.1-2013.10/gdb/aarch64-linux-nat.c.omv~	2014-07-30 19:48:38.791453355 +0200
++++ gdb-linaro-7.6.1-2013.10/gdb/aarch64-linux-nat.c	2014-07-30 19:48:52.058217206 +0200
+@@ -33,6 +33,7 @@
+ 
+ #include <sys/ptrace.h>
+ #include <sys/utsname.h>
++#include <asm/ptrace.h>
+ 
+ #include "gregset.h"
+ 

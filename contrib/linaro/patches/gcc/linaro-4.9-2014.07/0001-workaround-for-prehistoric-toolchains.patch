@@ -1,0 +1,22 @@
+diff --git a/gcc/config/arm/aarch-common.c b/gcc/config/arm/aarch-common.c
+index d31191a..24ad8d3 100644
+--- a/gcc/config/arm/aarch-common.c
++++ b/gcc/config/arm/aarch-common.c
+@@ -196,7 +196,7 @@ aarch_rev16_shright_mask_imm_p (rtx val, enum machine_mode mode)
+ {
+   return CONST_INT_P (val)
+          && INTVAL (val)
+-            == trunc_int_for_mode (HOST_WIDE_INT_C (0xff00ff00ff00ff),
++            == trunc_int_for_mode (0xff00ff00ff00ffULL,
+                                    mode);
+ }
+ 
+@@ -205,7 +205,7 @@ aarch_rev16_shleft_mask_imm_p (rtx val, enum machine_mode mode)
+ {
+   return CONST_INT_P (val)
+          && INTVAL (val)
+-            == trunc_int_for_mode (HOST_WIDE_INT_C (0xff00ff00ff00ff00),
++            == trunc_int_for_mode (0xff00ff00ff00ff00ULL,
+                                    mode);
+ }
+ 

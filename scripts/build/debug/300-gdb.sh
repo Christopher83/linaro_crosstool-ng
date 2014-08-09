@@ -58,7 +58,7 @@ do_debug_gdb_get() {
                     )"
     linaro_cycle="$( echo "${linaro_version}"      \
                       |sed -r -e 's/.*-20//;'      \
-                    )"
+                      |sed -e 's/-.*//g')"
 
     do_debug_gdb_parts
 
@@ -66,7 +66,8 @@ do_debug_gdb_get() {
         CT_GetFile "gdb-${CT_GDB_VERSION}"                          \
                    {ftp,http}://ftp.gnu.org/pub/gnu/gdb             \
                    ftp://sources.redhat.com/pub/gdb/{,old-}releases \
-		   "http://releases.linaro.org/${linaro_cycle}/components/toolchain/gdb-linaro"
+		   "http://releases.linaro.org/${linaro_cycle}/components/toolchain/gdb-linaro" \
+		   "http://cbuild.validation.linaro.org/snapshots"
     fi
 
     if [ "${do_ncurses}" = "y" ]; then
