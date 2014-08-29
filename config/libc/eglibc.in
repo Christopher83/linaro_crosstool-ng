@@ -17,9 +17,9 @@ choice
     prompt "eglibc version"
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
-config LIBC_EGLIBC_LINARO_V_2_19_2014_07
+config LIBC_EGLIBC_LINARO_V_2_19_2014_08
     bool
-    prompt "Linaro 2.19-2014.07"
+    prompt "Linaro 2.19-2014.08"
     select LIBC_EGLIBC_2_14_or_later
 
 config LIBC_EGLIBC_V_2_17
@@ -93,7 +93,7 @@ config LIBC_VERSION
     string
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
-    default "linaro-2.19-2014.07" if LIBC_EGLIBC_LINARO_V_2_19_2014_07
+    default "linaro-2.19-2014.08" if LIBC_EGLIBC_LINARO_V_2_19_2014_08
     default "2_17" if LIBC_EGLIBC_V_2_17
     default "2_14" if LIBC_EGLIBC_V_2_14
     default "2_13" if LIBC_EGLIBC_V_2_13

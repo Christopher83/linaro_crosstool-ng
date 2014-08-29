@@ -18,7 +18,7 @@ version() {
 
 # Check the latest currently downloadable version of a Linaro project
 current() {
-	local SNAP=`curl -s http://cbuild.validation.linaro.org/snapshots/ |grep '^<a' |sed -e 's,^<a[^"]*",,;s,".*,,' |grep -v '.asc$' |grep -vE '(bzr|_rc|branch-merge|integration|test)' |grep "${1}-linaro-.*-20[0-9][0-9]\.[01]" |sort |sed -e "s,${1}-linaro-,,;s,\.tar.*,," |grep -E '^[0-9]'`
+	local SNAP=`curl -s http://cbuild.validation.linaro.org/snapshots/ |grep '^<tr>.*<td><a' |sed -e 's,^.*<a[^"]*",,;s,".*,,' |grep -v '.asc$' |grep -vE '(bzr|_rc|branch-merge|integration|test)' |grep "${1}-linaro-.*-20[0-9][0-9]\.[01]" |sort |sed -e "s,${1}-linaro-,,;s,\.tar.*,," |grep -E '^[0-9]'`
 	local LATEST=""
 	local V
 	local CV

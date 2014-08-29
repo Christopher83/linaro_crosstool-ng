@@ -8,9 +8,9 @@ choice
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
 
-config BINUTILS_LINARO_V_2_24_0_2014_07
+config BINUTILS_LINARO_V_2_24_0_2014_08
     bool
-    prompt "linaro-2.24.0-2014.07-1"
+    prompt "linaro-2.24.0-2014.08"
     select BINUTILS_2_22_or_later
 
 config BINUTILS_V_2_24_PRE
@@ -73,7 +73,7 @@ config BINUTILS_VERSION
     string
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
-    default "linaro-2.24.0-2014.07-1" if BINUTILS_LINARO_V_2_24_0_2014_07
+    default "linaro-2.24.0-2014.08" if BINUTILS_LINARO_V_2_24_0_2014_08
     default "2.24~20121016+git142208f" if BINUTILS_V_2_24_PRE
     default "2.23.1" if BINUTILS_V_2_23_1
     default "2.22" if BINUTILS_V_2_22
