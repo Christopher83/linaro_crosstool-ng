@@ -33,6 +33,12 @@ choice
     prompt "gdb version"
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
+config GDB_V_linaro_7_8_2014_08
+    bool
+    prompt "linaro-7.8-2014.08 (EXPERIMENTAL)"
+    depends on DEBUG_GDB_SHOW_LINARO
+    select GDB_7_0_or_later
+
 config GDB_V_linaro_7_6_1_2013_10
     bool
     prompt "linaro-7.6.1-2013.10 (EXPERIMENTAL)"
@@ -108,6 +114,7 @@ config GDB_VERSION
     string
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
+    default "linaro-7.8-2014.08" if GDB_V_linaro_7_8_2014_08
     default "7.6~20121001+git3e2e76a" if GDB_V_7_6_PRE
     default "linaro-7.6.1-2013.10" if GDB_V_linaro_7_6_1_2013_10
     default "linaro-7.5-2012.12" if GDB_V_linaro_7_5_2012_12
