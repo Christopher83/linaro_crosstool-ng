@@ -17,9 +17,9 @@ choice
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
 
-config LIBC_NEWLIB_LINARO_2_1_0_2014_02
+config LIBC_NEWLIB_LINARO_2_1_0_2014_09
     bool
-    prompt "Linaro 2.1.0-2014.02"
+    prompt "Linaro 2.1.0-2014.09"
 
 config LIBC_NEWLIB_V_1_21_PRE
     bool
@@ -63,7 +63,7 @@ config LIBC_VERSION
     prompt "use CVS tag" if LIBC_NEWLIB_CVS
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
-    default "linaro-2.1.0-2014.02" if LIBC_NEWLIB_LINARO_2_1_0_2014_02
+    default "linaro-2.1.0-2014.09" if LIBC_NEWLIB_LINARO_2_1_0_2014_09
     default "2.0~20130530" if LIBC_NEWLIB_V_1_21_PRE
     default "1.19.0" if LIBC_NEWLIB_V_1_19_0
     default "1.18.0" if LIBC_NEWLIB_V_1_18_0
