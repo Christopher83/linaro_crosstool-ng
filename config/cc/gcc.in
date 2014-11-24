@@ -36,9 +36,9 @@ choice
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
 
-config CC_V_linaro_4_9_2014_10
+config CC_V_linaro_4_9_2014_11
     bool
-    prompt "linaro-4.9-2014.10 (EXPERIMENTAL)"
+    prompt "linaro-4.9-2014.11 (EXPERIMENTAL)"
     depends on CC_GCC_SHOW_LINARO
     select CC_GCC_4_8
 
@@ -48,9 +48,9 @@ config CC_V_linaro_4_7_2014_06
     depends on CC_GCC_SHOW_LINARO
     select CC_GCC_4_7
 
-config CC_V_linaro_4_8_2014_08
+config CC_V_linaro_4_8_2014_11
     bool
-    prompt "linaro-4.8-2014.08 (EXPERIMENTAL)"
+    prompt "linaro-4.8-2014.11 (EXPERIMENTAL)"
     depends on CC_GCC_SHOW_LINARO
     select CC_GCC_4_8
 
@@ -391,10 +391,10 @@ config CC_VERSION
     string
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
-    default "linaro-4.9-2014.10-1" if CC_V_linaro_4_9_2014_10
+    default "linaro-4.9-2014.11" if CC_V_linaro_4_9_2014_11
     default "arm-aarch64-4.7+svn191987" if CC_V_arm_aarch64_4_7_PRE
     default "linaro-4.7-2014.06" if CC_V_linaro_4_7_2014_06
-    default "linaro-4.8-2014.08" if CC_V_linaro_4_8_2014_08
+    default "linaro-4.8-2014.11" if CC_V_linaro_4_8_2014_11
     default "linaro-4.7+bzr115029" if CC_V_linaro_4_7_TIP
     default "4.7.0" if CC_V_4_7_0
     default "4.6.2" if CC_V_4_6_2
