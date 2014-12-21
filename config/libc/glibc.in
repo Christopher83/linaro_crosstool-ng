@@ -41,6 +41,10 @@ choice
 # Don't remove next line
 # CT_INSERT_VERSION_BELOW
 
+config LIBC_GLIBC_LINARO_V_2_20_2014_11
+    bool
+    prompt "Linaro 2.20-2014.11"
+
 config LIBC_GLIBC_V_2_14_1
     bool
     prompt "2.14.1 (EXPERIMENTAL)"
@@ -123,6 +127,7 @@ config LIBC_VERSION
     string
 # Don't remove next line
 # CT_INSERT_VERSION_STRING_BELOW
+    default "linaro-2.20-2014.11" if LIBC_GLIBC_LINARO_V_2_20_2014_11
     default "2.14.1" if LIBC_GLIBC_V_2_14_1
     default "2.14" if LIBC_GLIBC_V_2_14
     default "2.13" if LIBC_GLIBC_V_2_13
